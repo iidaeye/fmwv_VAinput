@@ -500,9 +500,24 @@ function buildDiopterPad(col) {
   return grid;
 }
 
+// 軸を delta 度ずつ増減（クロスシリンダー調整用）。180° で循環、0° は 180° として表示。
+function bumpAxis(delta) {
+  const cur = parseInt(state.draft.axis, 10);
+  const base = Number.isFinite(cur) ? cur : 0;
+  let next = (base + delta) % 180;
+  if (next < 0) next += 180;
+  if (next === 0) next = 180; // 0 は使わず 180 表記に統一
+  state.draft.axis = String(next);
+  renderForm();
+  renderKeypad();
+}
+
 function buildAxisPad() {
   const col = 'axis';
   const grid = newPadGrid();
+  // +5 / -5（クロスシリンダー調整用、180° 循環）col 1, rows 1-2
+  grid.appendChild(makeKey('+5', () => bumpAxis(+5), { cls: 'key-bump', title: '軸を +5°（180° 循環）', pos: pos(1, 1) }));
+  grid.appendChild(makeKey('−5', () => bumpAxis(-5), { cls: 'key-bump', title: '軸を -5°（180° 循環）', pos: pos(2, 1) }));
   // 90 / 180 頻出値 col 1, rows 3-4
   grid.appendChild(makeKey('90',  () => setVal(col, '90'),  { cls: 'key-quick', pos: pos(3, 1) }));
   grid.appendChild(makeKey('180', () => setVal(col, '180'), { cls: 'key-quick', pos: pos(4, 1) }));
