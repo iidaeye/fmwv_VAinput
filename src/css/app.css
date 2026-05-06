@@ -1,0 +1,202 @@
+:root {
+  --c-bg: #f6f7f9;
+  --c-fg: #1f2430;
+  --c-muted: #6b7280;
+  --c-border: #cbd2d9;
+  --c-accent: #2266dd;
+  --c-accent-fg: #fff;
+  --c-active: #fff7d6;
+  --c-active-border: #d4a017;
+  --c-warn: #c97400;
+  --c-error: #c0392b;
+  --c-ok: #1f8a4c;
+  --tap-h: 44px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Meiryo", system-ui, sans-serif;
+  font-size: 14px;
+  color: var(--c-fg);
+  background: var(--c-bg);
+  -webkit-text-size-adjust: 100%;
+  touch-action: manipulation;
+}
+
+button, input, select, textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  min-height: var(--tap-h);
+  min-width: var(--tap-h);
+  padding: 0 12px;
+  border: 1px solid var(--c-border);
+  background: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+}
+button:active { background: #eef2f7; }
+
+input[type="text"], textarea, select {
+  min-height: var(--tap-h);
+  padding: 4px 8px;
+  border: 1px solid var(--c-border);
+  border-radius: 4px;
+  background: #fff;
+  width: 100%;
+}
+
+.app {
+  display: grid;
+  grid-template-rows: auto auto 1fr auto auto;
+  height: 100vh;
+  gap: 4px;
+  padding: 6px;
+}
+
+/* ヘッダ */
+.header {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 8px;
+  background: #fff;
+  border: 1px solid var(--c-border);
+  border-radius: 6px;
+}
+.header .h-pt { font-weight: 600; }
+.header .h-pt span { color: var(--c-accent); margin-left: 4px; }
+.header label { display: flex; align-items: center; gap: 4px; }
+.header label > span { color: var(--c-muted); white-space: nowrap; }
+.header input { min-width: 8em; }
+
+/* ツールバー */
+.toolbar {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 4px;
+}
+.toolbar .spacer { flex: 1; }
+.btn-quote { background: #fff8d6; border-color: #d4a017; }
+.btn-tpl { background: #eef5ff; }
+.btn-primary { background: var(--c-accent); color: var(--c-accent-fg); border-color: var(--c-accent); }
+.btn-primary:active { background: #1a4eaa; }
+
+/* 行テーブル */
+.rows-wrap {
+  overflow: auto;
+  background: #fff;
+  border: 1px solid var(--c-border);
+  border-radius: 6px;
+}
+.rows {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.rows thead th {
+  position: sticky;
+  top: 0;
+  background: #eef2f7;
+  border-bottom: 1px solid var(--c-border);
+  padding: 6px 4px;
+  font-weight: 600;
+  white-space: nowrap;
+  z-index: 1;
+}
+.rows tbody td {
+  border-bottom: 1px solid #e5e9f0;
+  padding: 2px 4px;
+  vertical-align: middle;
+}
+.rows tbody tr.row-active { background: var(--c-active); }
+.rows tbody td.cell-active { outline: 2px solid var(--c-active-border); outline-offset: -2px; }
+
+.cell-eye select, .cell-VA_title select, .cell-exm_condition select { min-width: 5em; }
+.cell-nakedVA input, .cell-correctedVA input { min-width: 4em; text-align: right; }
+.cell-sphericalD input, .cell-cylindricalD input { min-width: 4em; text-align: right; }
+.cell-axis input { min-width: 3.5em; text-align: right; }
+
+.btn-rep, .btn-delete {
+  width: var(--tap-h);
+  padding: 0;
+  font-size: 18px;
+}
+.btn-rep.on { background: #fff2a8; border-color: #d4a017; }
+.btn-delete { color: var(--c-error); }
+
+/* キーパッド */
+.keypad {
+  background: #fff;
+  border: 1px solid var(--c-border);
+  border-radius: 6px;
+  padding: 6px;
+  min-height: 220px;
+}
+.keypad-hint {
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--c-muted);
+}
+.keypad-row {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+.keypad-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+  margin-bottom: 4px;
+}
+.keypad-key {
+  flex: 1 1 auto;
+  min-width: 56px;
+  font-size: 16px;
+}
+.keypad-special .keypad-key { background: #fbe8d8; }
+.keypad-ctrl .keypad-key { background: #f3f3f3; }
+.keypad-empty {
+  color: var(--c-muted);
+  padding: 24px;
+  text-align: center;
+}
+.keypad-numeric .keypad-row .keypad-key,
+.keypad-grid .keypad-key {
+  min-height: var(--tap-h);
+}
+
+/* フッタ */
+.footer {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+  align-items: stretch;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid var(--c-border);
+  border-radius: 6px;
+}
+.footer textarea {
+  min-height: var(--tap-h);
+  resize: vertical;
+}
+
+/* ステータス */
+.status {
+  padding: 4px 8px;
+  font-size: 13px;
+  color: var(--c-muted);
+}
+.status[data-type="warn"]  { color: var(--c-warn); }
+.status[data-type="error"] { color: var(--c-error); }
+.status[data-type="ok"]    { color: var(--c-ok); }

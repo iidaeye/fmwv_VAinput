@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>視力入力</title>
+<link rel="stylesheet" href="css/app.css">
+<script>
+  // FM 側スクリプトが Substitute で /*FM_INIT_JSON*/ を実 JSON に置換する。
+  // 例：window.__fmInit = {"ptID":"12345","mode":"create","authorName":"山田"};
+  window.__fmInit = /*FM_INIT_JSON*/{"ptID":"","mode":"create","authorName":""};
+</script>
+</head>
+<body>
+<div class="app">
+
+  <header class="header">
+    <div class="h-pt">患者ID<span id="patientId">—</span></div>
+    <label><span>セット名</span>
+      <input id="summaryTitle" type="text" list="summaryTitleSuggestions" placeholder="通常検査">
+      <datalist id="summaryTitleSuggestions"></datalist>
+    </label>
+    <label><span>検査者</span>
+      <input id="authorName" type="text" placeholder="名前">
+    </label>
+    <button id="btnQuoteLatest" type="button" class="btn-quote" title="同一患者の直前サマリを引用">引用 ↻</button>
+  </header>
+
+  <div class="toolbar">
+    <button id="btnAddRow" type="button">+ 行追加</button>
+    <button id="btnTplDistance" type="button" class="btn-tpl">遠見 R/L</button>
+    <button id="btnTplNear" type="button" class="btn-tpl">近見 R/L</button>
+    <button id="btnTplFull" type="button" class="btn-tpl">全置換 (遠近 R/L)</button>
+    <span class="spacer"></span>
+  </div>
+
+  <div class="rows-wrap">
+    <table class="rows">
+      <thead>
+        <tr>
+          <th>眼</th>
+          <th>区分</th>
+          <th>裸眼</th>
+          <th>条件</th>
+          <th>矯正</th>
+          <th>S</th>
+          <th>C</th>
+          <th>Ax</th>
+          <th>代表</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="rowsBody"></tbody>
+    </table>
+  </div>
+
+  <div id="keypad" class="keypad"></div>
+
+  <footer class="footer">
+    <textarea id="summaryComment" placeholder="サマリコメント（visualAcuitySummary）" rows="2"></textarea>
+    <button id="btnCancel" type="button">キャンセル</button>
+    <button id="btnSave" type="button" class="btn-primary">保存</button>
+  </footer>
+
+  <div id="status" class="status">起動中…</div>
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

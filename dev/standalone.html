@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>視力入力（ブラウザ単体検証）</title>
+<link rel="stylesheet" href="../src/css/app.css">
+<script>
+  // FM 起動時のシナリオを再現するモック
+  window.__fmInit = { ptID: '99999', mode: 'create', authorName: 'テスト 検査者' };
+
+  window.__fmMock = {
+    performScript(name, paramJson) {
+      const param = (() => { try { return JSON.parse(paramJson); } catch { return paramJson; } })();
+      console.log('[mock] PerformScript', name, param);
+      setTimeout(() => {
+        if (name === 'VA: Save') {
+          window.__fmSaveResult({
+            messages: [{ code: '0', message: 'OK' }],
+            response: { recordId: '1234', modId: '0' },
+            echo: param,
+          });
+        } else if (name === 'VA: Quote Latest') {
+          window.__fmQuoteResult({
+            data: [{
+              recordId: '1000',
+              fieldData: {
+                __k: 'demo-uuid',
+                _fk_ptID: 99999,
+                VASummaryTitle: '通常検査',
+                visualAcuitySummary: '前回所見：右やや低下',
+                authorName: '前回 担当',
+                isRepresentativeValue: '1',
+                timeOfRecord: '04/30/2026 09:11:00',
+              },
+              portalData: {
+                VA_Detail_Portal: [
+                  {
+                    recordId: '2001',
+                    'Exm_VisualAcuity::eye': 'R',
+                    'Exm_VisualAcuity::VA_title': '遠見',
+                    'Exm_VisualAcuity::nakedVA': '0.7',
+                    'Exm_VisualAcuity::correctedVA': '1.0',
+                    'Exm_VisualAcuity::sphericalD': '-2.00',
+                    'Exm_VisualAcuity::cylindricalD': '-0.50',
+                    'Exm_VisualAcuity::axis': '180',
+                    'Exm_VisualAcuity::exm_condition': '',
+                    'Exm_VisualAcuity::comment': '',
+                    'Exm_VisualAcuity::isRepresentativeValue': '1',
+                  },
+                  {
+                    recordId: '2002',
+                    'Exm_VisualAcuity::eye': 'L',
+                    'Exm_VisualAcuity::VA_title': '遠見',
+                    'Exm_VisualAcuity::nakedVA': '0.8',
+                    'Exm_VisualAcuity::correctedVA': '1.2',
+                    'Exm_VisualAcuity::sphericalD': '-1.50',
+                    'Exm_VisualAcuity::cylindricalD': '-0.25',
+                    'Exm_VisualAcuity::axis': '175',
+                    'Exm_VisualAcuity::exm_condition': '',
+                    'Exm_VisualAcuity::comment': '',
+                    'Exm_VisualAcuity::isRepresentativeValue': '1',
+                  },
+                ],
+              },
+            }],
+          });
+        }
+      }, 80);
+    },
+  };
+</script>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <div class="h-pt">患者ID<span id="patientId">—</span></div>
+    <label><span>セット名</span>
+      <input id="summaryTitle" type="text" list="summaryTitleSuggestions" placeholder="通常検査">
+      <datalist id="summaryTitleSuggestions"></datalist>
+    </label>
+    <label><span>検査者</span>
+      <input id="authorName" type="text" placeholder="名前">
+    </label>
+    <button id="btnQuoteLatest" type="button" class="btn-quote">引用 ↻</button>
+  </header>
+
+  <div class="toolbar">
+    <button id="btnAddRow" type="button">+ 行追加</button>
+    <button id="btnTplDistance" type="button" class="btn-tpl">遠見 R/L</button>
+    <button id="btnTplNear" type="button" class="btn-tpl">近見 R/L</button>
+    <button id="btnTplFull" type="button" class="btn-tpl">全置換 (遠近 R/L)</button>
+    <span class="spacer"></span>
+  </div>
+
+  <div class="rows-wrap">
+    <table class="rows">
+      <thead>
+        <tr>
+          <th>眼</th><th>区分</th><th>裸眼</th><th>条件</th>
+          <th>矯正</th><th>S</th><th>C</th><th>Ax</th>
+          <th>代表</th><th></th>
+        </tr>
+      </thead>
+      <tbody id="rowsBody"></tbody>
+    </table>
+  </div>
+
+  <div id="keypad" class="keypad"></div>
+
+  <footer class="footer">
+    <textarea id="summaryComment" rows="2" placeholder="サマリコメント"></textarea>
+    <button id="btnCancel" type="button">キャンセル</button>
+    <button id="btnSave" type="button" class="btn-primary">保存</button>
+  </footer>
+
+  <div id="status" class="status">起動中…</div>
+</div>
+
+<script type="module" src="../src/js/app.js"></script>
+</body>
+</html>
