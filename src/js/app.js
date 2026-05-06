@@ -138,10 +138,24 @@ function renderTitleCell(wrap) {
 }
 
 function renderConditionCell(wrap) {
-  const span = document.createElement('span');
-  span.className = 'val';
-  span.textContent = state.draft.exm_condition || '—';
-  wrap.appendChild(span);
+  const raw = state.draft.exm_condition || '';
+  const parts = raw.split(',').map((s) => s.trim()).filter(Boolean);
+  if (parts.length === 0) {
+    const span = document.createElement('span');
+    span.className = 'val';
+    span.textContent = '—';
+    wrap.appendChild(span);
+    return;
+  }
+  const list = document.createElement('div');
+  list.className = 'val val-list';
+  for (const p of parts) {
+    const item = document.createElement('div');
+    item.className = 'val-list-item';
+    item.textContent = p;
+    list.appendChild(item);
+  }
+  wrap.appendChild(list);
 }
 
 function renderTextCell(wrap, col) {
@@ -398,16 +412,42 @@ function buildTitlePad() {
   return grid;
 }
 
+// exm_condition は複数選択可（カンマ区切り）。トグルで追加／削除し、表示順は EXM_CONDITIONS 準拠。
+function toggleCondition(value) {
+  const cur = String(state.draft.exm_condition || '')
+    .split(',').map((s) => s.trim()).filter(Boolean);
+  const has = cur.includes(value);
+  const next = has ? cur.filter((v) => v !== value) : [...cur, value];
+  // EXM_CONDITIONS の順序で並べ直して安定化
+  const sorted = EXM_CONDITIONS.filter((c) => next.includes(c));
+  state.draft.exm_condition = sorted.join(',');
+  renderForm();
+  renderKeypad();
+}
+
+function isConditionSelected(value) {
+  return String(state.draft.exm_condition || '')
+    .split(',').map((s) => s.trim()).includes(value);
+}
+
 function buildConditionPad() {
   const grid = newPadGrid();
-  // KB/CL/IOL/字ひとつ を col 1 縦並び
-  grid.appendChild(makeKey('KB',     () => { state.draft.exm_condition = 'KB'; advanceCol(); }, { pos: pos(1, 1) }));
-  grid.appendChild(makeKey('CL',     () => { state.draft.exm_condition = 'CL'; advanceCol(); }, { pos: pos(2, 1) }));
-  grid.appendChild(makeKey('IOL',    () => { state.draft.exm_condition = 'IOL'; advanceCol(); }, { pos: pos(3, 1) }));
-  grid.appendChild(makeKey('字ひとつ', () => { state.draft.exm_condition = '字ひとつ'; advanceCol(); }, { pos: pos(4, 1) }));
-  // 「なし」は clear と兼用（col 7 row 1 の clear が役割を持つ）
-  grid.appendChild(makeKey('なし', () => { state.draft.exm_condition = ''; advanceCol(); },
-    { cls: 'key-clear', pos: pos(1, 7) }));
+  // KB/CL/IOL/字ひとつ を col 1 縦並び（トグル方式・複数選択 OK）
+  // タップでオン／オフ切替。確定は Enter でないと次セルへ進まない。
+  EXM_CONDITIONS.forEach((c, i) => {
+    const on = isConditionSelected(c);
+    grid.appendChild(makeKey(c, () => toggleCondition(c), {
+      cls: on ? 'key-cond-on' : 'key-cond',
+      pos: pos(i + 1, 1),
+    }));
+  });
+  // 「なし」: 全クリア
+  grid.appendChild(makeKey('なし', () => {
+    state.draft.exm_condition = '';
+    renderForm();
+    renderKeypad();
+  }, { cls: 'key-clear', pos: pos(1, 7) }));
+  // Enter: 次セルへ
   grid.appendChild(makeKey('Enter', () => advanceCol(), { cls: 'key-enter', pos: pos(2, 7, 3) }));
   return grid;
 }

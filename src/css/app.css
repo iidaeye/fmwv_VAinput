@@ -189,6 +189,21 @@ input[type="text"], textarea {
 .form-cell .val:empty::before,
 .form-cell .val[data-eye=""]::before { content: '—'; color: var(--c-muted); }
 
+/* 複数選択値の縦リスト表示（exm_condition 用） */
+.form-cell .val-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+  line-height: 1.15;
+  width: 100%;
+  text-align: center;
+}
+.form-cell .val-list-item {
+  white-space: nowrap;
+  font-weight: 600;
+}
+
 .val-eye {
   font-weight: 800;
   font-size: 22px;
@@ -340,8 +355,9 @@ input[type="text"], textarea {
 
 .keypad-hint {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: baseline;
+  gap: 16px;
   margin-bottom: 10px;
   padding: 0 6px;
   font-size: 14px;
@@ -352,6 +368,8 @@ input[type="text"], textarea {
   font-weight: 700;
   font-size: 24px;
   color: #fff;
+  text-align: center;
+  white-space: pre-line;
 }
 .keypad-current[data-eye="R"] { color: #ff8a99; }
 .keypad-current[data-eye="L"] { color: #82b1ff; }
@@ -405,6 +423,16 @@ input[type="text"], textarea {
 .keypad-key.key-eye-R    { background: var(--c-R-bg); color: var(--c-R-fg); border-color: var(--c-R-border); font-weight: 800; font-size: 26px; }
 .keypad-key.key-eye-L    { background: var(--c-L-bg); color: var(--c-L-fg); border-color: var(--c-L-border); font-weight: 800; font-size: 26px; }
 .keypad-key.key-eye-B    { background: var(--c-B-bg); color: var(--c-B-fg); border-color: var(--c-B-border); font-weight: 800; font-size: 26px; }
+
+/* 検査条件のトグル状態（複数選択 OK） */
+.keypad-key.key-cond     { background: #d8dde3; }
+.keypad-key.key-cond-on  {
+  background: #2bb673;
+  color: #fff;
+  border-color: #1f8a4c;
+  box-shadow: 0 0 0 3px #fff inset, 0 2px 0 rgba(0,0,0,0.15);
+  font-weight: 800;
+}
 
 /* ==================== フッタ ==================== */
 
