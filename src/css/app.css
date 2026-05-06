@@ -224,15 +224,6 @@ input[type="text"], textarea {
 .cell-axis { width: 70px; }
 
 .form-paren { color: var(--c-muted); font-size: 18px; }
-.form-tag {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--c-accent);
-  letter-spacing: 0.5px;
-  padding: 2px 4px;
-  background: rgba(34, 102, 221, 0.08);
-  border-radius: 4px;
-}
 
 .form-actions {
   display: flex;
