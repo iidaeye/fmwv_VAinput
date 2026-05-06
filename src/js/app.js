@@ -318,6 +318,16 @@ function renderKeypad() {
   else if (col === 'axis') pad.appendChild(buildAxisPad());
 }
 
+// 全キーパッドで共通の固定グリッド (7列 × 4行)。ボタンサイズ／位置は同一。
+// 各行・列の物理位置を覚えやすくするため、数字 7-9/4-6/1-3/0,.の位置は全パッド固定。
+
+function pos(row, col, rowSpan = 1, colSpan = 1) {
+  return {
+    gridRow: `${row} / span ${rowSpan}`,
+    gridColumn: `${col} / span ${colSpan}`,
+  };
+}
+
 function makeKey(label, onClick, opts = {}) {
   const b = document.createElement('button');
   b.type = 'button';
@@ -325,6 +335,10 @@ function makeKey(label, onClick, opts = {}) {
   b.textContent = label;
   if (opts.title) b.title = opts.title;
   if (opts.eye) b.dataset.eye = opts.eye;
+  if (opts.pos) {
+    b.style.gridRow = opts.pos.gridRow;
+    b.style.gridColumn = opts.pos.gridColumn;
+  }
   b.addEventListener('click', (ev) => {
     ev.preventDefault();
     onClick();
@@ -332,198 +346,133 @@ function makeKey(label, onClick, opts = {}) {
   return b;
 }
 
-function buildEyePad() {
-  const wrap = document.createElement('div');
-  wrap.className = 'pad-eye';
-  for (const eye of EYES) {
-    const label = eye === 'R' ? 'R（右）' : eye === 'L' ? 'L（左）' : 'B（両眼）';
-    wrap.appendChild(makeKey(label, () => {
-      state.draft.eye = eye;
-      advanceCol();
-    }, { cls: `key-eye-${eye}`, eye }));
+// 数字テンキー (cols 4-6, rows 1-4) を全パッド共通で配置
+function appendNumpad(grid, col) {
+  const layout = [
+    ['7', 1, 4], ['8', 1, 5], ['9', 1, 6],
+    ['4', 2, 4], ['5', 2, 5], ['6', 2, 6],
+    ['1', 3, 4], ['2', 3, 5], ['3', 3, 6],
+    ['0', 4, 4],
+  ];
+  for (const [d, r, c] of layout) {
+    grid.appendChild(makeKey(d, () => appendDigit(col, d), { pos: pos(r, c) }));
   }
-  return wrap;
+  grid.appendChild(makeKey('.', () => appendDot(col), { pos: pos(4, 5) }));
+  grid.appendChild(makeKey('⌫', () => backspace(col), { cls: 'key-back', pos: pos(4, 6) }));
+}
+
+// 右端の clear / Enter (col 7) を共通配置
+function appendClearEnter(grid, col, onEnter) {
+  grid.appendChild(makeKey('clear', () => setVal(col, ''), { cls: 'key-clear', pos: pos(1, 7) }));
+  grid.appendChild(makeKey('Enter', onEnter, { cls: 'key-enter', pos: pos(2, 7, 3) }));
+}
+
+function newPadGrid() {
+  const g = document.createElement('div');
+  g.className = 'keypad-grid';
+  return g;
+}
+
+function buildEyePad() {
+  const grid = newPadGrid();
+  // R/L/B を col 1, rows 1-3 に縦並び
+  grid.appendChild(makeKey('R', () => { state.draft.eye = 'R'; advanceCol(); },
+    { cls: 'key-eye-R', eye: 'R', pos: pos(1, 1) }));
+  grid.appendChild(makeKey('L', () => { state.draft.eye = 'L'; advanceCol(); },
+    { cls: 'key-eye-L', eye: 'L', pos: pos(2, 1) }));
+  grid.appendChild(makeKey('B', () => { state.draft.eye = 'B'; advanceCol(); },
+    { cls: 'key-eye-B', eye: 'B', pos: pos(3, 1) }));
+  appendClearEnter(grid, 'eye', () => advanceCol());
+  return grid;
 }
 
 function buildTitlePad() {
-  const wrap = document.createElement('div');
-  wrap.className = 'pad-title';
-  for (const t of VA_TITLES) {
-    wrap.appendChild(makeKey(t, () => {
-      state.draft.VA_title = t;
-      advanceCol();
-    }));
-  }
-  return wrap;
+  const grid = newPadGrid();
+  // 遠見 (1,1)、近見 (2,1)、30/40/70cm (2,2-4) の FM 既存配置
+  grid.appendChild(makeKey('遠見', () => { state.draft.VA_title = '遠見'; advanceCol(); }, { pos: pos(1, 1) }));
+  grid.appendChild(makeKey('近見', () => { state.draft.VA_title = '近見'; advanceCol(); }, { pos: pos(2, 1) }));
+  grid.appendChild(makeKey('30cm', () => { state.draft.VA_title = '30cm'; advanceCol(); }, { pos: pos(2, 2) }));
+  grid.appendChild(makeKey('40cm', () => { state.draft.VA_title = '40cm'; advanceCol(); }, { pos: pos(2, 3) }));
+  grid.appendChild(makeKey('70cm', () => { state.draft.VA_title = '70cm'; advanceCol(); }, { pos: pos(2, 4) }));
+  appendClearEnter(grid, 'VA_title', () => advanceCol());
+  return grid;
 }
 
 function buildConditionPad() {
-  const wrap = document.createElement('div');
-  wrap.className = 'pad-condition';
-  wrap.appendChild(makeKey('（なし）', () => {
-    state.draft.exm_condition = '';
-    advanceCol();
-  }, { cls: 'key-clear' }));
-  for (const c of EXM_CONDITIONS) {
-    wrap.appendChild(makeKey(c, () => {
-      state.draft.exm_condition = c;
-      advanceCol();
-    }));
-  }
-  return wrap;
+  const grid = newPadGrid();
+  // KB/CL/IOL/字ひとつ を col 1 縦並び
+  grid.appendChild(makeKey('KB',     () => { state.draft.exm_condition = 'KB'; advanceCol(); }, { pos: pos(1, 1) }));
+  grid.appendChild(makeKey('CL',     () => { state.draft.exm_condition = 'CL'; advanceCol(); }, { pos: pos(2, 1) }));
+  grid.appendChild(makeKey('IOL',    () => { state.draft.exm_condition = 'IOL'; advanceCol(); }, { pos: pos(3, 1) }));
+  grid.appendChild(makeKey('字ひとつ', () => { state.draft.exm_condition = '字ひとつ'; advanceCol(); }, { pos: pos(4, 1) }));
+  // 「なし」は clear と兼用（col 7 row 1 の clear が役割を持つ）
+  grid.appendChild(makeKey('なし', () => { state.draft.exm_condition = ''; advanceCol(); },
+    { cls: 'key-clear', pos: pos(1, 7) }));
+  grid.appendChild(makeKey('Enter', () => advanceCol(), { cls: 'key-enter', pos: pos(2, 7, 3) }));
+  return grid;
 }
 
 function buildVAPad(col) {
-  const wrap = document.createElement('div');
-  wrap.className = 'pad-va';
-
-  // 左：特殊値
-  const special = document.createElement('div');
-  special.className = 'pad-va-special';
-  for (const s of VA_SPECIAL) {
-    special.appendChild(makeKey(s.label, () => {
-      state.draft[col] = s.value;
-      renderForm();
-      renderKeypad();
-    }, { cls: 'key-special', title: s.value }));
+  const grid = newPadGrid();
+  // 特殊値 cols 1-2, rows 1-3 (5値: s.l.+/s.l.-/m.m./c.f./n.d.)
+  const specials = [
+    { v: 's.l.+', r: 1, c: 1 },
+    { v: 's.l.-', r: 1, c: 2 },
+    { v: 'm.m.',  r: 2, c: 1 },
+    { v: 'c.f.',  r: 2, c: 2 },
+    { v: 'n.d.',  r: 3, c: 1 },
+  ];
+  for (const s of specials) {
+    grid.appendChild(makeKey(s.v, () => setVal(col, s.v), { cls: 'key-special', pos: pos(s.r, s.c) }));
   }
-  wrap.appendChild(special);
-
-  // 中央：テンキー
-  const num = document.createElement('div');
-  num.className = 'pad-va-num';
-  const rows = [['7','8','9'], ['4','5','6'], ['1','2','3']];
-  for (const r of rows) {
-    const div = document.createElement('div');
-    div.className = 'pad-row';
-    for (const d of r) div.appendChild(makeKey(d, () => appendChar(col, d)));
-    num.appendChild(div);
-  }
-  const last = document.createElement('div');
-  last.className = 'pad-row';
-  last.appendChild(makeKey('0.', () => insertText(col, '0.', { mode: 'replace' })));
-  last.appendChild(makeKey('0', () => appendChar(col, '0')));
-  last.appendChild(makeKey('.', () => appendChar(col, '.')));
-  last.appendChild(makeKey('.0', () => insertText(col, '.0', { mode: 'append' })));
-  num.appendChild(last);
-
-  // 末尾追記キー（partial / cm 距離）+ ⌫ + clear
-  const appendRow = document.createElement('div');
-  appendRow.className = 'pad-row';
-  for (const k of VA_APPEND_KEYS) {
-    appendRow.appendChild(makeKey(k.label, () => insertText(col, k.value, { mode: 'append' }),
-      { cls: 'key-append', title: k.hint }));
-  }
-  appendRow.appendChild(makeKey('⌫', () => backspace(col), { cls: 'key-back' }));
-  appendRow.appendChild(makeKey('clear', () => setVal(col, ''), { cls: 'key-clear' }));
-  num.appendChild(appendRow);
-  wrap.appendChild(num);
-
-  // 右：Enter
-  const ctrl = document.createElement('div');
-  ctrl.className = 'pad-va-ctrl';
-  ctrl.appendChild(makeKey('Enter', () => advanceCol(), { cls: 'key-enter' }));
-  wrap.appendChild(ctrl);
-
-  return wrap;
+  // 小数点ショートカット col 3
+  grid.appendChild(makeKey('0.', () => applyDecimalShortcut(col, 'zerodot'),
+    { cls: 'key-shortcut', title: '整数部を 0 に置換', pos: pos(1, 3) }));
+  grid.appendChild(makeKey('.0', () => applyDecimalShortcut(col, 'dotzero'),
+    { cls: 'key-shortcut', title: '小数部を 0 に置換', pos: pos(2, 3) }));
+  // 末尾追記キー (partial / cm)
+  grid.appendChild(makeKey('p', () => insertText(col, 'p', { mode: 'append' }),
+    { cls: 'key-append', title: 'partial（弱）', pos: pos(3, 3) }));
+  grid.appendChild(makeKey('cm', () => insertText(col, 'cm', { mode: 'append' }),
+    { cls: 'key-append', title: 'HM/CF 認識距離', pos: pos(4, 3) }));
+  // テンキー + clear/Enter
+  appendNumpad(grid, col);
+  appendClearEnter(grid, col, () => advanceCol());
+  return grid;
 }
 
 function buildDiopterPad(col) {
-  const wrap = document.createElement('div');
-  wrap.className = 'pad-diopter';
-
-  // 左：符号
-  const sign = document.createElement('div');
-  sign.className = 'pad-diopter-sign';
-  sign.appendChild(makeKey('+', () => setSign(col, '+'), { cls: 'key-sign' }));
-  sign.appendChild(makeKey('−', () => setSign(col, '-'), { cls: 'key-sign' }));
-  wrap.appendChild(sign);
-
-  // 中央：テンキー
-  const num = document.createElement('div');
-  num.className = 'pad-diopter-num';
-  const rows = [['7','8','9'], ['4','5','6'], ['1','2','3']];
-  for (const r of rows) {
-    const div = document.createElement('div');
-    div.className = 'pad-row';
-    for (const d of r) div.appendChild(makeKey(d, () => appendIntDigit(col, d)));
-    num.appendChild(div);
-  }
-  const last = document.createElement('div');
-  last.className = 'pad-row';
-  last.appendChild(makeKey('0', () => appendIntDigit(col, '0')));
-  last.appendChild(makeKey('.', () => appendChar(col, '.')));
-  last.appendChild(makeKey('.0', () => setFraction(col, '00')));
-  last.appendChild(makeKey('⌫', () => backspace(col), { cls: 'key-back' }));
-  num.appendChild(last);
-  wrap.appendChild(num);
-
-  // 右1：0.25 / 0.50 / 0.75 ショートカット + clear
-  const frac = document.createElement('div');
-  frac.className = 'pad-diopter-frac';
-  for (const f of DIOPTER_QUICK_FRAC) {
-    frac.appendChild(makeKey(f, () => setFraction(col, f.split('.')[1]), { cls: 'key-frac' }));
-  }
-  frac.appendChild(makeKey('clear', () => setVal(col, ''), { cls: 'key-clear' }));
-  wrap.appendChild(frac);
-
-  // 右2：Enter
-  const ctrl = document.createElement('div');
-  ctrl.className = 'pad-diopter-ctrl';
-  ctrl.appendChild(makeKey('Enter', () => {
+  const grid = newPadGrid();
+  // 符号 col 1, rows 1-2
+  grid.appendChild(makeKey('+', () => setSign(col, '+'), { cls: 'key-sign', pos: pos(1, 1) }));
+  grid.appendChild(makeKey('−', () => setSign(col, '-'), { cls: 'key-sign', pos: pos(2, 1) }));
+  // 0.25 / 0.50 / 0.75 / .0 ショートカット col 3
+  grid.appendChild(makeKey('0.25', () => applyDecimalShortcut(col, 'frac25'), { cls: 'key-frac', pos: pos(1, 3) }));
+  grid.appendChild(makeKey('0.50', () => applyDecimalShortcut(col, 'frac50'), { cls: 'key-frac', pos: pos(2, 3) }));
+  grid.appendChild(makeKey('0.75', () => applyDecimalShortcut(col, 'frac75'), { cls: 'key-frac', pos: pos(3, 3) }));
+  grid.appendChild(makeKey('.0',   () => applyDecimalShortcut(col, 'dotzero'), { cls: 'key-shortcut', pos: pos(4, 3) }));
+  // テンキー + clear/Enter
+  appendNumpad(grid, col);
+  appendClearEnter(grid, col, () => {
     state.draft[col] = normalizeDiopter(state.draft[col]);
     advanceCol();
-  }, { cls: 'key-enter' }));
-  wrap.appendChild(ctrl);
-
-  return wrap;
+  });
+  return grid;
 }
 
 function buildAxisPad() {
   const col = 'axis';
-  const wrap = document.createElement('div');
-  wrap.className = 'pad-axis';
-
-  // 左：頻出値
-  const quick = document.createElement('div');
-  quick.className = 'pad-axis-quick';
-  for (const v of AXIS_QUICK_VALUES) {
-    quick.appendChild(makeKey(v, () => {
-      state.draft[col] = v;
-      renderForm();
-      renderKeypad();
-    }, { cls: 'key-quick' }));
-  }
-  wrap.appendChild(quick);
-
-  // 中央：テンキー
-  const num = document.createElement('div');
-  num.className = 'pad-axis-num';
-  const rows = [['7','8','9'], ['4','5','6'], ['1','2','3']];
-  for (const r of rows) {
-    const div = document.createElement('div');
-    div.className = 'pad-row';
-    for (const d of r) div.appendChild(makeKey(d, () => appendChar(col, d)));
-    num.appendChild(div);
-  }
-  const last = document.createElement('div');
-  last.className = 'pad-row';
-  last.appendChild(makeKey('0', () => appendChar(col, '0')));
-  last.appendChild(makeKey('⌫', () => backspace(col), { cls: 'key-back' }));
-  last.appendChild(makeKey('clear', () => setVal(col, ''), { cls: 'key-clear' }));
-  num.appendChild(last);
-  wrap.appendChild(num);
-
-  // 右：Enter
-  const ctrl = document.createElement('div');
-  ctrl.className = 'pad-axis-ctrl';
-  ctrl.appendChild(makeKey('Enter', () => {
+  const grid = newPadGrid();
+  // 90 / 180 頻出値 col 1, rows 3-4
+  grid.appendChild(makeKey('90',  () => setVal(col, '90'),  { cls: 'key-quick', pos: pos(3, 1) }));
+  grid.appendChild(makeKey('180', () => setVal(col, '180'), { cls: 'key-quick', pos: pos(4, 1) }));
+  // テンキー + clear/Enter（符号なし）
+  appendNumpad(grid, col);
+  appendClearEnter(grid, col, () => {
     state.draft[col] = normalizeAxis(state.draft[col]);
     advanceCol();
-  }, { cls: 'key-enter' }));
-  wrap.appendChild(ctrl);
-
-  return wrap;
+  });
+  return grid;
 }
 
 // =================== セル値操作 ===================
@@ -534,13 +483,42 @@ function setVal(col, v) {
   renderKeypad();
 }
 
-function appendChar(col, ch) {
+// 数値セルのパース：sign / int / hasDot / frac に分解。
+// 純粋な数値文字列以外（s.l.+ 等）は parts==null を返す。
+function parseNumeric(value) {
+  const s = String(value ?? '');
+  const m = s.match(/^([+\-]?)(\d*)(\.(\d*))?$/);
+  if (!m) return null;
+  return {
+    sign: m[1] || '',
+    int:  m[2] || '',
+    hasDot: !!m[3],
+    frac: m[4] || '',
+  };
+}
+
+function buildNumeric({ sign, int, hasDot, frac }) {
+  return sign + int + (hasDot ? '.' + frac : '');
+}
+
+// 数字キー：単純に末尾追加。小数点が既にあるかどうかで自動的に整数部 / 小数部に積まれる。
+function appendDigit(col, digit) {
   const cur = state.draft[col] ?? '';
-  state.draft[col] = cur + ch;
+  state.draft[col] = cur + digit;
   renderForm();
   renderKeypad();
 }
 
+// 小数点キー：1値に1つだけ。既に '.' があれば無視。
+function appendDot(col) {
+  const cur = state.draft[col] ?? '';
+  if (cur.includes('.')) return;
+  state.draft[col] = cur + '.';
+  renderForm();
+  renderKeypad();
+}
+
+// 任意テキストの追記／置換（p / cm / 0. などの自由形式に使用）
 function insertText(col, text, opts = {}) {
   const cur = state.draft[col] ?? '';
   if (opts.mode === 'replace' || cur === '') {
@@ -565,18 +543,42 @@ function setSign(col, sign) {
   renderKeypad();
 }
 
-function appendIntDigit(col, digit) {
-  const cur = state.draft[col] ?? '';
-  state.draft[col] = cur + digit;
-  renderForm();
-  renderKeypad();
-}
+// 小数点ショートカット：小数点を境に整数部 or 小数部を置換し、'.' は常に1つに保つ。
+//   'zerodot'  ：'0.' ボタン  → 整数部を '0' に置換、小数部は維持（無ければ空）
+//   'dotzero'  ：'.0' ボタン  → 小数部を '0' に置換、整数部は維持（無ければ '0'）
+//   'frac25/50/75' ：度数の小数部を '25/50/75' に置換、整数部は維持（無ければ '0'）
+function applyDecimalShortcut(col, kind) {
+  const parts = parseNumeric(state.draft[col]) || { sign: '', int: '', hasDot: false, frac: '' };
+  let { sign, int, hasDot, frac } = parts;
 
-function setFraction(col, frac) {
-  let cur = state.draft[col] ?? '';
-  cur = cur.replace(/\.\d*$/, '').replace(/\.$/, '');
-  if (cur === '' || cur === '+' || cur === '-') cur += '0';
-  state.draft[col] = `${cur}.${frac}`;
+  switch (kind) {
+    case 'zerodot':
+      int = '0';
+      hasDot = true;
+      // frac は維持
+      break;
+    case 'dotzero':
+      if (!int) int = '0';
+      hasDot = true;
+      frac = '0';
+      break;
+    case 'frac25':
+      if (!int) int = '0';
+      hasDot = true;
+      frac = '25';
+      break;
+    case 'frac50':
+      if (!int) int = '0';
+      hasDot = true;
+      frac = '50';
+      break;
+    case 'frac75':
+      if (!int) int = '0';
+      hasDot = true;
+      frac = '75';
+      break;
+  }
+  state.draft[col] = buildNumeric({ sign, int, hasDot, frac });
   renderForm();
   renderKeypad();
 }
@@ -639,9 +641,14 @@ document.addEventListener('keydown', (ev) => {
       return;
     }
   }
-  if (/^[0-9.]$/.test(ev.key)) {
+  if (ev.key === '.') {
     ev.preventDefault();
-    appendChar(col, ev.key);
+    appendDot(col);
+    return;
+  }
+  if (/^[0-9]$/.test(ev.key)) {
+    ev.preventDefault();
+    appendDigit(col, ev.key);
   }
 });
 

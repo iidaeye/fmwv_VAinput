@@ -34,6 +34,13 @@
   --c-key-enter: #2bb673;
   --c-key-frac: #cce5ff;
   --c-key-quick: #fff8d6;
+  --c-key-shortcut: #d4f0ff;
+
+  /* キーパッドの固定寸法（モニタや画面幅で変化させない）。
+     全パッド共通: 7列 × 4行、各セルは正方形 --key-size。
+     スタッフが指の位置を覚えやすいよう、サイズと位置を固定。 */
+  --key-size: 80px;
+  --key-gap: 6px;
 
   --tap-h: 56px;
 }
@@ -325,15 +332,17 @@ input[type="text"], textarea {
   background: var(--c-pad-bg);
   color: var(--c-pad-fg);
   border-radius: 8px;
-  padding: 10px;
-  min-height: 280px;
+  padding: 14px;
   outline: none;
+  /* 中身は固定サイズ。横スクロールしてでも縮めない */
+  overflow-x: auto;
 }
+
 .keypad-hint {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   padding: 0 6px;
   font-size: 14px;
   color: rgba(255,255,255,0.85);
@@ -341,133 +350,61 @@ input[type="text"], textarea {
 .keypad-current {
   font-family: ui-monospace, monospace;
   font-weight: 700;
-  font-size: 22px;
+  font-size: 24px;
   color: #fff;
 }
 .keypad-current[data-eye="R"] { color: #ff8a99; }
 .keypad-current[data-eye="L"] { color: #82b1ff; }
 .keypad-current[data-eye="B"] { color: #ce93d8; }
 
+/* 全パッド共通の固定グリッド：7列 × 4行、セルは正方形 (--key-size) */
+.keypad-grid {
+  display: grid;
+  grid-template-columns: repeat(7, var(--key-size));
+  grid-template-rows: repeat(4, var(--key-size));
+  gap: var(--key-gap);
+  width: max-content;
+  margin: 0 auto;
+}
+
 .keypad-key {
-  min-height: 56px;
-  min-width: 56px;
-  padding: 0 14px;
+  /* グリッドセルにフィット。サイズはグリッドが決める。 */
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  padding: 0;
   border: 1px solid #2c3036;
   border-radius: 8px;
   background: var(--c-key-bg);
   color: var(--c-key-fg);
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 22px;
+  font-weight: 700;
   cursor: pointer;
   box-shadow: 0 2px 0 rgba(0,0,0,0.15);
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .keypad-key:active {
   transform: translateY(1px);
   box-shadow: 0 1px 0 rgba(0,0,0,0.15);
 }
-.keypad-key.key-special  { background: var(--c-key-special); }
-.keypad-key.key-clear    { background: var(--c-key-clear); }
-.keypad-key.key-enter    { background: var(--c-key-enter); color: #fff; }
-.keypad-key.key-frac     { background: var(--c-key-frac); }
+
+/* キー種別の色分け */
+.keypad-key.key-special  { background: var(--c-key-special); font-size: 17px; }
+.keypad-key.key-shortcut { background: var(--c-key-shortcut); font-size: 18px; }
+.keypad-key.key-clear    { background: var(--c-key-clear); font-size: 17px; }
+.keypad-key.key-enter    { background: var(--c-key-enter); color: #fff; font-size: 20px; }
+.keypad-key.key-frac     { background: var(--c-key-frac); font-size: 18px; }
 .keypad-key.key-quick    { background: var(--c-key-quick); }
-.keypad-key.key-back     { background: #d3d6da; }
-.keypad-key.key-sign     { background: #ffd58a; }
-.keypad-key.key-append   { background: #d4f0ff; }
-.keypad-key.key-eye-R    { background: var(--c-R-bg); color: var(--c-R-fg); border-color: var(--c-R-border); font-weight: 800; font-size: 20px; }
-.keypad-key.key-eye-L    { background: var(--c-L-bg); color: var(--c-L-fg); border-color: var(--c-L-border); font-weight: 800; font-size: 20px; }
-.keypad-key.key-eye-B    { background: var(--c-B-bg); color: var(--c-B-fg); border-color: var(--c-B-border); font-weight: 800; font-size: 20px; }
-
-.pad-row {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 6px;
-}
-.pad-row .keypad-key { flex: 1 1 auto; }
-
-/* 眼パッド */
-.pad-eye {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  max-width: 480px;
-}
-.pad-eye .keypad-key { min-height: 80px; font-size: 22px; }
-
-/* タイトルパッド */
-.pad-title {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 8px;
-  max-width: 720px;
-}
-.pad-title .keypad-key { min-height: 64px; }
-
-/* 検査条件パッド */
-.pad-condition {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 8px;
-  max-width: 720px;
-}
-.pad-condition .keypad-key { min-height: 64px; }
-
-/* VA パッド (3カラム：特殊値 / テンキー / Enter) */
-.pad-va {
-  display: grid;
-  grid-template-columns: 200px 1fr 100px;
-  gap: 10px;
-  align-items: stretch;
-}
-.pad-va-special {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  align-content: start;
-}
-.pad-va-special .keypad-key { min-height: 64px; }
-.pad-va-num { display: flex; flex-direction: column; gap: 0; }
-.pad-va-ctrl { display: flex; }
-.pad-va-ctrl .keypad-key { flex: 1; }
-
-/* 度数パッド (4カラム：符号 / テンキー / 0.25-0.75 / Enter) */
-.pad-diopter {
-  display: grid;
-  grid-template-columns: 80px 1fr 100px 100px;
-  gap: 10px;
-  align-items: stretch;
-}
-.pad-diopter-sign {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.pad-diopter-sign .keypad-key { flex: 1; min-height: 64px; font-size: 28px; }
-.pad-diopter-num { display: flex; flex-direction: column; gap: 0; }
-.pad-diopter-frac {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.pad-diopter-frac .keypad-key { flex: 1; }
-.pad-diopter-ctrl { display: flex; }
-.pad-diopter-ctrl .keypad-key { flex: 1; }
-
-/* 軸パッド */
-.pad-axis {
-  display: grid;
-  grid-template-columns: 100px 1fr 100px;
-  gap: 10px;
-  align-items: stretch;
-}
-.pad-axis-quick {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.pad-axis-quick .keypad-key { flex: 1; }
-.pad-axis-num { display: flex; flex-direction: column; gap: 0; }
-.pad-axis-ctrl { display: flex; }
-.pad-axis-ctrl .keypad-key { flex: 1; }
+.keypad-key.key-back     { background: #d3d6da; font-size: 22px; }
+.keypad-key.key-sign     { background: #ffd58a; font-size: 28px; }
+.keypad-key.key-append   { background: #d4f0ff; font-size: 18px; }
+.keypad-key.key-eye-R    { background: var(--c-R-bg); color: var(--c-R-fg); border-color: var(--c-R-border); font-weight: 800; font-size: 26px; }
+.keypad-key.key-eye-L    { background: var(--c-L-bg); color: var(--c-L-fg); border-color: var(--c-L-border); font-weight: 800; font-size: 26px; }
+.keypad-key.key-eye-B    { background: var(--c-B-bg); color: var(--c-B-fg); border-color: var(--c-B-border); font-weight: 800; font-size: 26px; }
 
 /* ==================== フッタ ==================== */
 
@@ -512,8 +449,5 @@ input[type="text"], textarea {
   .header { grid-template-columns: 1fr 1fr; }
   .subheader { grid-template-columns: 1fr; }
   .form-line { font-size: 16px; }
-  .pad-va { grid-template-columns: 160px 1fr 80px; }
-  .pad-diopter { grid-template-columns: 60px 1fr 80px 80px; }
-  .pad-axis { grid-template-columns: 80px 1fr 80px; }
-  .keypad-key { min-height: 48px; min-width: 48px; font-size: 16px; }
+  /* キーパッドのサイズはモニタや画面幅で変えない（固定 --key-size） */
 }
