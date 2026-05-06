@@ -16,13 +16,12 @@ export const VA_NUMERIC_STEPS = [
 ];
 
 // 特殊値（数値ではない視力）。ラテン語表記で保存値＝表示ラベル。
-// 対応：s.l.=sensus luminis(光覚)、m.m.=manus motus(手動)、c.f.=counting fingers(指数)
+// 対応：s.l.=sensus luminis(光覚)、m.m.=manus motus(手動)、n.d.=測定不能/指数弁未満
 export const VA_SPECIAL = [
   { value: 's.l.+', label: 's.l.+' }, // 光覚弁(+) ≒ LP(+)
   { value: 's.l.-', label: 's.l.-' }, // 光覚弁(-) ≒ LP(-)
   { value: 'm.m.',  label: 'm.m.'  }, // 手動弁    ≒ HM
-  { value: 'c.f.',  label: 'c.f.'  }, // 指数弁    ≒ CF
-  { value: 'n.d.',  label: 'n.d.'  }, // 測定不能
+  { value: 'n.d.',  label: 'n.d.'  }, // 測定不能 / 指数弁未満
 ];
 
 // 検査条件 (exm_condition フィールド)

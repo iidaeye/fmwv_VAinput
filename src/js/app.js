@@ -454,13 +454,12 @@ function buildConditionPad() {
 
 function buildVAPad(col) {
   const grid = newPadGrid();
-  // 特殊値 cols 1-2, rows 1-3 (5値: s.l.+/s.l.-/m.m./c.f./n.d.)
+  // 特殊値 cols 1-2, rows 1-2 (4値: s.l.+/s.l.-/m.m./n.d.)
   const specials = [
     { v: 's.l.+', r: 1, c: 1 },
     { v: 's.l.-', r: 1, c: 2 },
     { v: 'm.m.',  r: 2, c: 1 },
-    { v: 'c.f.',  r: 2, c: 2 },
-    { v: 'n.d.',  r: 3, c: 1 },
+    { v: 'n.d.',  r: 2, c: 2 },
   ];
   for (const s of specials) {
     grid.appendChild(makeKey(s.v, () => setVal(col, s.v), { cls: 'key-special', pos: pos(s.r, s.c) }));

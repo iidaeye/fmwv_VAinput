@@ -224,6 +224,15 @@ input[type="text"], textarea {
 .cell-axis { width: 70px; }
 
 .form-paren { color: var(--c-muted); font-size: 18px; }
+.form-tag {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-accent);
+  letter-spacing: 0.5px;
+  padding: 2px 4px;
+  background: rgba(34, 102, 221, 0.08);
+  border-radius: 4px;
+}
 
 .form-actions {
   display: flex;
@@ -455,10 +464,19 @@ input[type="text"], textarea {
   background: var(--c-accent);
   color: var(--c-accent-fg);
   border-color: var(--c-accent);
-  font-weight: 700;
-  min-width: 96px;
+  font-weight: 800;
+  min-width: 160px;
+  min-height: 72px;
+  padding: 0 28px;
+  font-size: 22px;
+  border-radius: 10px;
+  box-shadow: 0 2px 0 rgba(0,0,0,0.15);
 }
-.btn-primary:active { background: #1a4eaa; }
+.btn-primary:active {
+  background: #1a4eaa;
+  transform: translateY(1px);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.15);
+}
 
 /* ==================== ステータス ==================== */
 
