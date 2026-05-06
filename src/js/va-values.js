@@ -1,9 +1,10 @@
 // 視力検査の選択肢定数。
 // VA_TITLES は Exm_VisualAcuity::cal_txtData の prefix 分岐
 // (遠見/70cm/近見/40cm/30cm) と一致させる必要あり。
-export const VA_TITLES = ['遠見', '70cm', '近見', '40cm', '30cm'];
+export const VA_TITLES = ['遠見', '近見', '30cm', '40cm', '70cm'];
 
-export const EYES = ['R', 'L'];
+// 測定眼。B = 両眼（calc では BV = と表示）
+export const EYES = ['R', 'L', 'B'];
 
 // 数値視力の刻み（小数点以下は文字列保持）
 export const VA_NUMERIC_STEPS = [
@@ -14,43 +15,41 @@ export const VA_NUMERIC_STEPS = [
   '1.0', '1.2', '1.5', '2.0',
 ];
 
-// 特殊値（数値ではない視力）
+// 特殊値（数値ではない視力）。表示ラベルは慣用表記、保存値は eye-clinic 標準。
 export const VA_SPECIAL = [
+  { value: 'LP(+)', label: 's.l.+' }, // 光覚弁(+)
+  { value: 'LP(-)', label: 's.l.-' }, // 光覚弁(-)
+  { value: 'HM',    label: 'm.m.'  }, // 手動弁
+  { value: 'CF',    label: 'c.f.'  }, // 指数弁
   { value: 'n.d.',  label: 'n.d.'  },
-  { value: 'CF',    label: '指数弁' },
-  { value: 'HM',    label: '手動弁' },
-  { value: 'LP(+)', label: '光覚(+)' },
-  { value: 'LP(-)', label: '光覚(-)' },
 ];
 
-// 検査条件（要ユーザー確認、これは初期値）
-export const EXM_CONDITIONS = [
-  { value: '',      label: '(なし)' },
-  { value: 'p.h.',  label: 'p.h.'   },
-  { value: 'sc',    label: 'sc'     },
-  { value: 'cc',    label: 'cc'     },
-  { value: 'CL',    label: 'CL'     },
-  { value: 'mydr',  label: '散瞳後'  },
-];
+// 検査条件 (exm_condition フィールド)
+// レンズ条件 (KB/CL/IOL) と検査方法 (字ひとつ) を1フィールドに格納
+export const EXM_CONDITIONS = ['KB', 'CL', 'IOL', '字ひとつ'];
 
 // よく使うサマリタイトル候補（自由入力可）
 export const VA_SUMMARY_TITLE_SUGGESTIONS = [
-  '通常検査', '散瞳前', '散瞳後', '矯正後', '術前', '術後',
+  '通常検査', '散瞳前', '散瞳後', '矯正前', '矯正後', '術前', '術後', 'CL処方',
 ];
 
-// S/C 度数の刻み（0.25 D）
-export const DIOPTER_STEP = 0.25;
-export const DIOPTER_MIN = -30;
-export const DIOPTER_MAX = 30;
+// 度数の 0.25 D ショートカット小数部
+export const DIOPTER_QUICK_FRAC = ['0.25', '0.50', '0.75'];
 
-// Ax の範囲
-export const AXIS_MIN = 0;
-export const AXIS_MAX = 180;
+// 軸の頻出値
+export const AXIS_QUICK_VALUES = ['90', '180'];
+
+// VA キーパッドの末尾追記キー
+export const VA_APPEND_KEYS = [
+  { value: 'p',  label: 'p',  hint: 'partial（弱）' },
+  { value: 'cm', label: 'cm', hint: 'HM/CF 認識距離' },
+];
 
 // 行モデル：1行 = 明細1レコードに対応
 export function makeEmptyRow() {
   return {
-    recordId: '',                  // FM 内部 recordId（既存行のみ）
+    recordId: '',
+    __k: '',
     eye: '',
     VA_title: '遠見',
     nakedVA: '',
@@ -64,33 +63,13 @@ export function makeEmptyRow() {
   };
 }
 
-// 標準テンプレート：両眼遠見（裸眼+矯正）4行
-export function templateDistance() {
-  return [
-    { ...makeEmptyRow(), eye: 'R', VA_title: '遠見' },
-    { ...makeEmptyRow(), eye: 'L', VA_title: '遠見' },
-  ];
-}
-
-// 標準テンプレート：両眼近見 2行
-export function templateNear() {
-  return [
-    { ...makeEmptyRow(), eye: 'R', VA_title: '近見' },
-    { ...makeEmptyRow(), eye: 'L', VA_title: '近見' },
-  ];
-}
-
-export function templateFull() {
-  return [...templateDistance(), ...templateNear()];
-}
-
 // 度数の正規化：'-2' → '-2.00'、'2' → '+2.00'、'-.5' → '-0.50' 等
 export function normalizeDiopter(input) {
   if (input == null) return '';
   const s = String(input).trim();
   if (s === '') return '';
   const m = s.match(/^([+\-]?)(\d*)(?:\.(\d+))?$/);
-  if (!m) return s; // 数値以外はそのまま
+  if (!m) return s;
   const sign = m[1] === '-' ? '-' : '+';
   const intPart = m[2] === '' ? '0' : m[2];
   const fracPart = (m[3] ?? '').padEnd(2, '0').slice(0, 2);
@@ -104,6 +83,37 @@ export function normalizeAxis(input) {
   if (s === '') return '';
   const n = Number(s);
   if (!Number.isFinite(n)) return s;
-  const clamped = Math.max(AXIS_MIN, Math.min(AXIS_MAX, Math.round(n)));
+  const clamped = Math.max(0, Math.min(180, Math.round(n)));
   return String(clamped);
+}
+
+// 行の表示用1行サマリ（cal_txtData の形式を JS で再現）
+export function rowToDisplayLine(row) {
+  if (!row) return '';
+  const prefix = row.VA_title === '遠見' ? ''
+    : row.VA_title === '70cm' ? 'm'
+    : (row.VA_title === '近見' || row.VA_title === '40cm' || row.VA_title === '30cm') ? 'N'
+    : '';
+  const letterX = (!row.sphericalD && !row.cylindricalD) ? '' : ' x ';
+  const letterCyl = !row.cylindricalD ? '' : ' =cyl ';
+  const letterAx = !row.axis ? '' : ' Ax ';
+  const isFar = row.VA_title === '遠見';
+  const star = row.isRepresentativeValue === '1' ? '*' : '';
+  const naked = row.nakedVA || '';
+  const corrected = row.correctedVA || '';
+  const cond = row.exm_condition ? ` ${row.exm_condition}` : '';
+  const titleSuffix = isFar ? '' : row.VA_title;
+  const commentSuffix = row.comment ? ` ${row.comment}` : '';
+  const slash = (titleSuffix || commentSuffix) ? ' / ' : '';
+
+  return `${prefix}${row.eye || '?'}V = ${naked}${cond} ( ${corrected}${letterX}${row.sphericalD}${letterCyl}${row.cylindricalD}${letterAx}${row.axis} )${star}${slash}${titleSuffix}${commentSuffix}`;
+}
+
+// 行が「空」(全主要項目が未入力) かどうか
+export function isRowEmpty(row) {
+  return [
+    row.eye, row.nakedVA, row.correctedVA,
+    row.sphericalD, row.cylindricalD, row.axis,
+    row.exm_condition, row.comment,
+  ].every((v) => !v || String(v).trim() === '');
 }

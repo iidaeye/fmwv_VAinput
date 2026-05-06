@@ -4,65 +4,102 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>視力入力</title>
+<link rel="icon" href="data:,">
 <link rel="stylesheet" href="css/app.css">
 <script>
   // FM 側スクリプトが Substitute で /*FM_INIT_JSON*/ を実 JSON に置換する。
-  // 例：window.__fmInit = {"ptID":"12345","mode":"create","authorName":"山田"};
-  window.__fmInit = /*FM_INIT_JSON*/{"ptID":"","mode":"create","authorName":""};
+  // 例：window.__fmInit = {"ptID":"12345","mode":"create","authorName":"山田","patientName":"テスト 太郎"};
+  window.__fmInit = /*FM_INIT_JSON*/{"ptID":"","mode":"create","authorName":"","patientName":""};
 </script>
 </head>
 <body>
 <div class="app">
 
   <header class="header">
-    <div class="h-pt">患者ID<span id="patientId">—</span></div>
-    <label><span>セット名</span>
-      <input id="summaryTitle" type="text" list="summaryTitleSuggestions" placeholder="通常検査">
-      <datalist id="summaryTitleSuggestions"></datalist>
-    </label>
-    <label><span>検査者</span>
-      <input id="authorName" type="text" placeholder="名前">
-    </label>
-    <button id="btnQuoteLatest" type="button" class="btn-quote" title="同一患者の直前サマリを引用">引用 ↻</button>
+    <div class="h-block">
+      <span class="h-label">検査日時</span>
+      <span class="h-strong" id="timeOfRecord">—</span>
+    </div>
+    <div class="h-block">
+      <label><span>入力者</span>
+        <input id="authorName" type="text" placeholder="検査者名">
+      </label>
+    </div>
+    <div class="h-block">
+      <span class="h-label">ID</span>
+      <span class="h-pt-id" id="patientId">—</span>
+      <span class="h-label">氏名</span>
+      <span class="h-strong" id="patientName"></span>
+    </div>
+    <button id="btnQuoteLatest" type="button" class="h-quote" title="同一患者の直前サマリを引用">引用 ↻</button>
   </header>
 
-  <div class="toolbar">
-    <button id="btnAddRow" type="button">+ 行追加</button>
-    <button id="btnTplDistance" type="button" class="btn-tpl">遠見 R/L</button>
-    <button id="btnTplNear" type="button" class="btn-tpl">近見 R/L</button>
-    <button id="btnTplFull" type="button" class="btn-tpl">全置換 (遠近 R/L)</button>
-    <span class="spacer"></span>
+  <div class="subheader">
+    <label><span>タイトル</span>
+      <input id="summaryTitle" type="text" list="summaryTitleSuggestions" placeholder="（省略可：通常検査 等）">
+      <datalist id="summaryTitleSuggestions"></datalist>
+    </label>
+    <span></span>
+    <label><span>サマリ</span>
+      <input id="summaryComment" type="text" placeholder="検査全体のコメント">
+    </label>
+    <span></span>
   </div>
+
+  <section class="form" id="form" data-eye="">
+    <div class="form-mode" id="formMode" data-mode="new">新規入力</div>
+    <div class="form-line">
+      <div class="form-cell cell-eye" id="cell-eye"></div>
+      <span>V =</span>
+      <div class="form-cell cell-nakedVA" id="cell-nakedVA"></div>
+      <div class="form-cell cell-exm_condition" id="cell-exm_condition"></div>
+      <span class="form-paren">(</span>
+      <div class="form-cell cell-correctedVA" id="cell-correctedVA"></div>
+      <span class="form-paren">x</span>
+      <div class="form-cell cell-sphericalD" id="cell-sphericalD"></div>
+      <span class="form-paren">=cyl</span>
+      <div class="form-cell cell-cylindricalD" id="cell-cylindricalD"></div>
+      <span class="form-paren">Ax</span>
+      <div class="form-cell cell-axis" id="cell-axis"></div>
+      <span class="form-paren">)</span>
+      <span class="form-paren">/</span>
+      <div class="form-cell cell-VA_title" id="cell-VA_title"></div>
+    </div>
+    <div class="form-actions">
+      <button id="btnRep" type="button" class="btn-rep" title="代表値">☆ 代表</button>
+    </div>
+    <div class="form-actions">
+      <button id="btnRegister" type="button" class="btn-register">登録 ＋</button>
+      <button id="btnRegisterCancel" type="button" class="btn-register-cancel">クリア</button>
+    </div>
+    <div class="form-comment">
+      <label for="rowComment">行コメント</label>
+      <input id="rowComment" type="text" placeholder="この明細のコメント">
+    </div>
+  </section>
 
   <div class="rows-wrap">
     <table class="rows">
       <thead>
         <tr>
-          <th>眼</th>
-          <th>区分</th>
-          <th>裸眼</th>
-          <th>条件</th>
-          <th>矯正</th>
-          <th>S</th>
-          <th>C</th>
-          <th>Ax</th>
-          <th>代表</th>
-          <th></th>
+          <th class="col-no">#</th>
+          <th class="col-line">表示行（cal_txtData 相当）</th>
+          <th class="col-rep">代</th>
+          <th class="col-actions"></th>
         </tr>
       </thead>
       <tbody id="rowsBody"></tbody>
     </table>
   </div>
 
-  <div id="keypad" class="keypad"></div>
+  <div id="keypad" class="keypad" tabindex="0"></div>
 
   <footer class="footer">
-    <textarea id="summaryComment" placeholder="サマリコメント（visualAcuitySummary）" rows="2"></textarea>
+    <div id="status" class="status">起動中…</div>
     <button id="btnCancel" type="button">キャンセル</button>
     <button id="btnSave" type="button" class="btn-primary">保存</button>
   </footer>
 
-  <div id="status" class="status">起動中…</div>
 </div>
 
 <script type="module" src="js/app.js"></script>
