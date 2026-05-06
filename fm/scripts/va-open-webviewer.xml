@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmxmlsnippet type="FMObjectList">
+  <Step enable="True" id="89" name="# (comment)"><Text>========================================</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>Script: VA: Open WebViewer</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>作成: 視力入力 WebViewer を起動</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>呼出: カルテ等のボタンから実行</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>引数: { "ptID":"...", "summaryId":"...(編集時のみ)", </Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>        "mode":"create|update", "authorName":"...", "patientName":"..." }</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>========================================</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)"><Text>引数取得</Text></Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[Get ( ScriptParameter )]]></Calculation></Value>
+    <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+    <Name>$param</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[JSONGetElement ( $param ; "ptID" )]]></Calculation></Value>
+    <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+    <Name>$ptID</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[JSONGetElement ( $param ; "summaryId" )]]></Calculation></Value>
+    <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+    <Name>$summaryId</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[Case ( JSONGetElement ( $param ; "mode" ) = "update" ; "update" ; "create" )]]></Calculation></Value>
+    <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+    <Name>$mode</Name>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)"><Text>validation: ptID 必須</Text></Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[IsEmpty ( $ptID )]]></Calculation>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA["error: ptID is required"]]></Calculation>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)"><Text>WebViewer に注入する init JSON を組み立て</Text></Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[JSONSetElement ( "" ;
+  [ "ptID"            ; $ptID                                              ; JSONString ] ;
+  [ "summaryRecordId" ; $summaryId                                         ; JSONString ] ;
+  [ "mode"            ; $mode                                              ; JSONString ] ;
+  [ "authorName"      ; JSONGetElement ( $param ; "authorName" )           ; JSONString ] ;
+  [ "patientName"     ; JSONGetElement ( $param ; "patientName" )          ; JSONString ]
+)]]></Calculation></Value>
+    <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+    <Name>$initJSON</Name>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)"><Text>WebViewer URL を組み立て</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>方式 A: 開発初期 = GitHub Pages 直接読込み（Perform JavaScript で init を後注入）</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>方式 B: 実運用 = globals::g_VA_WebViewerHTML をテンプレ化、data:URL に展開</Text></Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA["https://iidaeye.github.io/fmwv_VAinput/src/index.html"]]></Calculation></Value>
+    <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+    <Name>$webviewerUrl</Name>
+  </Step>
+  <Step enable="False" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[Let ( [
+  ~tpl  = globals::g_VA_WebViewerHTML ;
+  ~html = Substitute ( ~tpl ; "/*FM_INIT_JSON*/" ; $initJSON )
+]; "data:text/html;charset=utf-8," & GetAsURLEncoded ( ~html ) )]]></Calculation></Value>
+    <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+    <Name>$webviewerUrl</Name>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)"><Text>===== ここに「Set Web Viewer」ステップを追加 =====</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>  オブジェクト名: VA_WebViewer</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>  Action: URL を設定</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>  URL: $webviewerUrl</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)"><Text>方式 A の場合は、ここで少し待機 (Pause/Resume Script で 1 秒) してから</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>「Perform JavaScript in Web Viewer」で init を注入する：</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>  オブジェクト名: VA_WebViewer</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>  関数名: "__fmSetInit"   ※ WebViewer 側に同名関数を実装する想定</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>  パラメータ 1: $initJSON</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>　（mode=update なら直後に "VA: Load Summary" を Perform Script）</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA["ok"]]></Calculation>
+  </Step>
+</fmxmlsnippet>

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmxmlsnippet type="FMObjectList">
+  <Step enable="True" id="89" name="# (comment)"><Text>========================================</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>Script: VA: Quote Latest</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>作成: 同一患者の直前サマリを取得して WebViewer に返す</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>呼出: WebViewer の「引用 ↻」ボタンから FileMaker.PerformScript</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>引数: { "ptID": "12345" }</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>========================================</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[Get ( ScriptParameter )]]></Calculation></Value>
+    <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+    <Name>$param</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[JSONGetElement ( $param ; "ptID" )]]></Calculation></Value>
+    <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+    <Name>$ptID</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[IsEmpty ( $ptID )]]></Calculation>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA["error: ptID is required"]]></Calculation>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)"><Text>Data API: findRecords で _fk_ptID 一致 + isActive=1 を timeOfRecord 降順、最新 1 件</Text></Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[JSONSetElement ( "" ;
+  [ "action"           ; "read"                          ; JSONString ] ;
+  [ "layouts"          ; "API_VA_Summary"                ; JSONString ] ;
+  [ "query[0]._fk_ptID"  ; "==" & $ptID                  ; JSONString ] ;
+  [ "query[0].isActive"  ; "1"                            ; JSONString ] ;
+  [ "sort[0].fieldName"  ; "timeOfRecord"                 ; JSONString ] ;
+  [ "sort[0].sortOrder"  ; "descend"                      ; JSONString ] ;
+  [ "limit"             ; "1"                             ; JSONString ]
+)]]></Calculation></Value>
+    <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+    <Name>$apiRequest</Name>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)"><Text>===== ここに「Execute FileMaker Data API」ステップを追加 =====</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>  Target: 変数 $result, リピート: 1</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>  Request: $apiRequest</Text></Step>
+  <Step enable="False" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA["PLACEHOLDER: Execute FileMaker Data API ( request: $apiRequest ; target: $result )"]]></Calculation></Value>
+    <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+    <Name>$result</Name>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)"><Text>===== ここに「Perform JavaScript in Web Viewer」ステップを追加 =====</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>  オブジェクト名: VA_WebViewer</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>  関数名: 計算 → "__fmQuoteResult"</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>  パラメータ 1: $result</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[$result]]></Calculation>
+  </Step>
+</fmxmlsnippet>

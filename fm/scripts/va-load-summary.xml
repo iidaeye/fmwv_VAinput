@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmxmlsnippet type="FMObjectList">
+  <Step enable="True" id="89" name="# (comment)"><Text>========================================</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>Script: VA: Load Summary</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>作成: 既存サマリの内容を WebViewer に読み込む</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>呼出: WebViewer の編集モード起動時、または「VA: Open WebViewer」直後</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>引数: { "recordId": "..." }   ※ FM 内部 recordId（__k ではない）</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>========================================</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[Get ( ScriptParameter )]]></Calculation></Value>
+    <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+    <Name>$param</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[JSONGetElement ( $param ; "recordId" )]]></Calculation></Value>
+    <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+    <Name>$recordId</Name>
+  </Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[IsEmpty ( $recordId )]]></Calculation>
+  </Step>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA["error: recordId is required"]]></Calculation>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)"><Text>Data API: get で 1 件取得（ポータル含む）</Text></Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[JSONSetElement ( "" ;
+  [ "action"   ; "read"             ; JSONString ] ;
+  [ "layouts"  ; "API_VA_Summary"   ; JSONString ] ;
+  [ "recordId" ; $recordId          ; JSONString ]
+)]]></Calculation></Value>
+    <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+    <Name>$apiRequest</Name>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)"><Text>===== ここに「Execute FileMaker Data API」ステップを追加 =====</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>  Target: 変数 $result, リピート: 1</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>  Request: $apiRequest</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>※ 下のプレースホルダ Set Variable は実ステップ追加後に削除</Text></Step>
+  <Step enable="False" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA["PLACEHOLDER: Execute FileMaker Data API ( request: $apiRequest ; target: $result )"]]></Calculation></Value>
+    <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+    <Name>$result</Name>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)"><Text>===== ここに「Perform JavaScript in Web Viewer」ステップを追加 =====</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>  オブジェクト名: VA_WebViewer</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>  関数名: 計算 → "__fmReceiveSummary"</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>  パラメータ 1: $result</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="103" name="Exit Script">
+    <Calculation><![CDATA[$result]]></Calculation>
+  </Step>
+</fmxmlsnippet>
