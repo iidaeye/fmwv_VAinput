@@ -94,24 +94,23 @@ WebViewer のソースを患者カルテに data:URL で埋め込むため、HTM
 2. 新規スクリプトを作成、上記の名前に
 3. `va-XXX.xml` の中身（`<?xml ...>` から `</fmxmlsnippet>` まで）を **クリップボードにコピー**
 4. スクリプトワークスペースのステップ領域に **ペースト**（Cmd/Ctrl + V）
-5. FM が確実なステップを解釈して挿入（コメント / Set Variable / If 等 / **Execute FileMaker Data API** / Show Custom Dialog）
-6. **プレースホルダ コメントブロック**（赤いコメント `===== ここに XX を追加 =====` で挟まれている部分）を確認
-7. プレースホルダの上にあるコメントの指示に従って、特殊ステップ（Perform JavaScript in Web Viewer / Set Web Viewer）を **手動でドラッグ＆ドロップ** で追加
+5. **全ステップが自動展開**されます（プレースホルダなし、コメント / Set Variable / If / Execute FileMaker Data API / Set Web Viewer / Perform JavaScript in Web Viewer / Show Custom Dialog すべて実ステップ）
 
-## 既知のステップ ID（このリポジトリの XML で使用）
+## 使用ステップ ID
 
 | ステップ名 | id | 状態 |
 |---|---|---|
-| `# (comment)` | 89 | ✅ 確認済 |
+| `# (comment)` | 89 | ✅ |
+| `Perform Script` | 1 | ✅ |
 | `Set Variable` | 141 | ✅ |
+| `Set Field` | 76 | ✅ |
 | `If` / `Else` / `End If` | 68 / 69 / 70 | ✅ |
 | `Exit Script` | 103 | ✅ |
-| `Execute FileMaker Data API` | **203** | ✅ サンプルコードから確認 |
+| `Insert Text` | 61 | ✅ |
 | `Show Custom Dialog` | 87 | ✅ |
-| `Perform JavaScript in Web Viewer` | (未確認) | ⚠️ プレースホルダ |
-| `Set Web Viewer` | (未確認) | ⚠️ プレースホルダ |
-
-`Perform JavaScript in Web Viewer` と `Set Web Viewer` の内部 ID が分かれば、プレースホルダなしで完全自動化できます。FM で 1 ステップ作って XML をコピーし、`<Step enable="True" id="???" name="...">` の数値を教えてください。
+| `Set Web Viewer` | **146** | ✅ |
+| `Perform JavaScript in Web Viewer` | **175** | ✅ |
+| `Execute FileMaker Data API` | **203** | ✅ |
 
 ## デバッグダイアログ
 

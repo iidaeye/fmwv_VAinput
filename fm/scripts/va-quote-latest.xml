@@ -74,10 +74,20 @@
     </Buttons>
   </Step>
   <Step enable="True" id="89" name="# (comment)"/>
-  <Step enable="True" id="89" name="# (comment)"><Text>===== ここに「Perform JavaScript in Web Viewer」ステップを追加 =====</Text></Step>
-  <Step enable="True" id="89" name="# (comment)"><Text>  オブジェクト名: VA_WebViewer</Text></Step>
-  <Step enable="True" id="89" name="# (comment)"><Text>  関数名: 計算 → "__fmQuoteResult"</Text></Step>
-  <Step enable="True" id="89" name="# (comment)"><Text>  パラメータ 1: $result</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>WebViewer に引用候補を返す</Text></Step>
+  <Step enable="True" id="175" name="Perform JavaScript in Web Viewer">
+    <ObjectName>
+      <Calculation><![CDATA["VA_WebViewer"]]></Calculation>
+    </ObjectName>
+    <FunctionName>
+      <Calculation><![CDATA["__fmQuoteResult"]]></Calculation>
+    </FunctionName>
+    <Parameters Count="1">
+      <P>
+        <Calculation><![CDATA[$result]]></Calculation>
+      </P>
+    </Parameters>
+  </Step>
   <Step enable="True" id="89" name="# (comment)"/>
   <Step enable="True" id="103" name="Exit Script">
     <Calculation><![CDATA[$result]]></Calculation>

@@ -52,8 +52,15 @@
     <Name>$initJSON</Name>
   </Step>
   <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)"><Text>WebViewer 表示対象オブジェクト名</Text></Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA["VA_WebViewer"]]></Calculation></Value>
+    <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+    <Name>$objectName</Name>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
   <Step enable="True" id="89" name="# (comment)"><Text>WebViewer URL を組み立て</Text></Step>
-  <Step enable="True" id="89" name="# (comment)"><Text>方式 A: 開発初期 = GitHub Pages 直接読込み（Perform JavaScript で init を後注入）</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>方式 A: 開発初期 = GitHub Pages 直接読込み（init は Perform JS で後注入）</Text></Step>
   <Step enable="True" id="89" name="# (comment)"><Text>方式 B: 実運用 = globals::g_VA_WebViewerHTML をテンプレ化、data:URL に展開</Text></Step>
   <Step enable="True" id="141" name="Set Variable">
     <Value><Calculation><![CDATA["https://iidaeye.github.io/fmwv_VAinput/src/index.html"]]></Calculation></Value>
@@ -69,17 +76,52 @@
     <Name>$webviewerUrl</Name>
   </Step>
   <Step enable="True" id="89" name="# (comment)"/>
-  <Step enable="True" id="89" name="# (comment)"><Text>===== ここに「Set Web Viewer」ステップを追加 =====</Text></Step>
-  <Step enable="True" id="89" name="# (comment)"><Text>  オブジェクト名: VA_WebViewer</Text></Step>
-  <Step enable="True" id="89" name="# (comment)"><Text>  Action: URL を設定</Text></Step>
-  <Step enable="True" id="89" name="# (comment)"><Text>  URL: $webviewerUrl</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>WebViewer に URL をセット（GoToURL アクション）</Text></Step>
+  <Step enable="True" id="146" name="Set Web Viewer">
+    <Action value="GoToURL"/>
+    <ObjectName>
+      <Calculation><![CDATA[$objectName]]></Calculation>
+    </ObjectName>
+    <URL custom="True">
+      <Calculation><![CDATA[$webviewerUrl]]></Calculation>
+    </URL>
+  </Step>
+  <Step enable="False" id="87" name="Show Custom Dialog">
+    <Title><Calculation><![CDATA["debug VA: Open WebViewer"]]></Calculation></Title>
+    <Message><Calculation><![CDATA["objectName: " & $objectName & ¶ & "url: " & $webviewerUrl & ¶ & ¶ & "init: " & $initJSON]]></Calculation></Message>
+    <Buttons>
+      <Button CommitState="True"><Calculation><![CDATA["OK"]]></Calculation></Button>
+      <Button CommitState="False"/>
+      <Button CommitState="False"/>
+    </Buttons>
+  </Step>
   <Step enable="True" id="89" name="# (comment)"/>
-  <Step enable="True" id="89" name="# (comment)"><Text>方式 A の場合は、ここで少し待機 (Pause/Resume Script で 1 秒) してから</Text></Step>
-  <Step enable="True" id="89" name="# (comment)"><Text>「Perform JavaScript in Web Viewer」で init を注入する：</Text></Step>
-  <Step enable="True" id="89" name="# (comment)"><Text>  オブジェクト名: VA_WebViewer</Text></Step>
-  <Step enable="True" id="89" name="# (comment)"><Text>  関数名: "__fmSetInit"   ※ WebViewer 側に同名関数を実装する想定</Text></Step>
-  <Step enable="True" id="89" name="# (comment)"><Text>  パラメータ 1: $initJSON</Text></Step>
-  <Step enable="True" id="89" name="# (comment)"><Text>　（mode=update なら直後に "VA: Load Summary" を Perform Script）</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>方式 A の場合：ページ読込みを少し待ってから init を Perform JS で注入</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>（方式 B = data:URL の場合は __fmInit が HTML 内で既に置換済みなので不要）</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>※ 0.8 秒程度の待機を入れるか、WebViewer 側から WebViewerReady を投げ返す方式に</Text></Step>
+  <Step enable="True" id="175" name="Perform JavaScript in Web Viewer">
+    <ObjectName>
+      <Calculation><![CDATA[$objectName]]></Calculation>
+    </ObjectName>
+    <FunctionName>
+      <Calculation><![CDATA["__fmSetInit"]]></Calculation>
+    </FunctionName>
+    <Parameters Count="1">
+      <P>
+        <Calculation><![CDATA[$initJSON]]></Calculation>
+      </P>
+    </Parameters>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)"><Text>編集モードなら引き続き既存サマリをロード</Text></Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[$mode = "update" and not IsEmpty ( $summaryId )]]></Calculation>
+  </Step>
+  <Step enable="True" id="1" name="Perform Script">
+    <Calculation><![CDATA[JSONSetElement ( "" ; "recordId" ; $summaryId ; JSONString )]]></Calculation>
+    <Script id="0" name="VA: Load Summary"/>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
   <Step enable="True" id="89" name="# (comment)"/>
   <Step enable="True" id="103" name="Exit Script">
     <Calculation><![CDATA["ok"]]></Calculation>
