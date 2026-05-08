@@ -44,7 +44,7 @@
   </Step>
   <Step enable="True" id="141" name="Set Variable">
     <Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
-  [ "layouts" ; "API_VA_Summary" ; JSONString ] ;
+  [ "layouts" ; "api_Exm_VisualAcuity_Summary" ; JSONString ] ;
   [ "query"   ; $queryArray      ; JSONArray  ] ;
   [ "sort"    ; $sortArray       ; JSONArray  ] ;
   [ "limit"   ; "1"              ; JSONString ]

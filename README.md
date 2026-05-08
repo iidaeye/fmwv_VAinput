@@ -51,7 +51,7 @@ python3 -m http.server 8080
 
 ### 2. API 専用レイアウト
 
-`API_VA_Summary` を新規作成（基底 TO は `Exm_VisualAcuity_Summary`）。
+`api_Exm_VisualAcuity_Summary` を新規作成（基底 TO 名を `api_Exm_VisualAcuity_Summary` に）。
 
 - 配置フィールド：`__k`, `_fk_ptID`, `VASummaryTitle`, `visualAcuitySummary`, `authorName`,
   `isRepresentativeValue`, `timeOfRecord`, `cal_txtData`
@@ -82,14 +82,14 @@ python3 -m http.server 8080
 
 - **`VA: Load Summary ( recordId )`**
   ```
-  Set Variable [ $req ; JSONSetElement ( "" ; "layouts" ; "API_VA_Summary" ; JSONString )
+  Set Variable [ $req ; JSONSetElement ( "" ; "layouts" ; "api_Exm_VisualAcuity_Summary" ; JSONString )
                                        & ... ]   // ※ get に layouts と recordId を渡す
   Execute FileMaker Data API [ Action: get ; ... ; Target: $result ]
   Perform JavaScript in Web Viewer [ Object: "VA_WV"
                                    ; Function: "__fmReceiveSummary" ; Param: $result ]
   ```
   最小実装は `Execute FileMaker Data API` の Action `get` でレイアウト
-  `API_VA_Summary` から `recordId` を1件取得し、その JSON をそのまま
+  `api_Exm_VisualAcuity_Summary` から `recordId` を1件取得し、その JSON をそのまま
   `__fmReceiveSummary` に渡す。
 
 - **`VA: Save ( payload )`**
@@ -116,7 +116,7 @@ python3 -m http.server 8080
   ```
   // findRecords で _fk_ptID = $ptID を timeOfRecord 降順で1件取得
   Execute FileMaker Data API [ Action: findRecords
-                             ; Layout: "API_VA_Summary"
+                             ; Layout: "api_Exm_VisualAcuity_Summary"
                              ; Query: $query ; Limit: 1
                              ; Sort: $sort ; Target: $result ]
   Perform JavaScript in Web Viewer [ Object: "VA_WV"
@@ -139,7 +139,7 @@ create:
 {
   "mode": "create",
   "summary": {
-    "layout": "API_VA_Summary",
+    "layout": "api_Exm_VisualAcuity_Summary",
     "request": {
       "fieldData": {
         "_fk_ptID": "12345",
@@ -167,7 +167,7 @@ update:
 {
   "mode": "update",
   "summary": {
-    "layout": "API_VA_Summary",
+    "layout": "api_Exm_VisualAcuity_Summary",
     "recordId": "1234",
     "request": {
       "fieldData": { "VASummaryTitle": "再検査" },

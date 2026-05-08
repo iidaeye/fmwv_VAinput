@@ -1,7 +1,7 @@
 // FileMaker Data API 互換ペイロードの生成・パース
 // FM 側 `Execute FileMaker Data API` スクリプトステップにそのまま投入できる構造を作る。
 
-const SUMMARY_LAYOUT = 'API_VA_Summary';
+const SUMMARY_LAYOUT = 'api_Exm_VisualAcuity_Summary';
 const PORTAL_NAME = 'VA_Detail_Portal';
 const DETAIL_TO = 'Exm_VisualAcuity';
 

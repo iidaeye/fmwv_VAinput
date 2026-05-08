@@ -19,9 +19,9 @@ WebViewer と連携するために、FM 側で以下を作成します。
 - リレーション設定で **「このリレーションシップを使用してこのテーブルにレコードの作成を許可」を ON**（明細側）
 - TO 名（Summary 側から見た明細 TO）は `_Exm_VisualAcuity` を想定（既存の `cal_txtData` 計算が `List ( _Exm_VisualAcuity::cal_txtData )` を参照しているため）
 
-## 3. API 専用レイアウト `API_VA_Summary`
+## 3. API 専用レイアウト `api_Exm_VisualAcuity_Summary`
 
-新規レイアウト作成、ベース TO は `Exm_VisualAcuity_Summary`。
+新規レイアウト作成、ベース TO 名を `api_Exm_VisualAcuity_Summary` に。
 
 ### 配置するフィールド
 - `__k`
