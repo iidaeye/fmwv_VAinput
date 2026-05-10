@@ -28,12 +28,19 @@ const READY_SCRIPT_NAME = 'VA: WebViewer Ready';
 const READY_POLL_INTERVAL_MS = 100;
 const READY_POLL_MAX_TRIES = 50; // 約 5 秒
 const INIT_WAIT_TIMEOUT_MS = 8000;
-const EXPECT_TIMEOUT_MS = 30000; // FM が __fmXxxResult を呼ばないまま 30 秒過ぎたら諦める
+// FM が __fmXxxResult を呼ばないまま経った時の救済タイムアウト。
+// debug ダイアログ等を挟むと長くなるので、window.__fmExpectTimeoutMs で上書き可。
+// 0 / 負値で無効化。
+const DEFAULT_EXPECT_TIMEOUT_MS = 5 * 60 * 1000; // 5 分
+function getExpectTimeoutMs() {
+  const v = window.__fmExpectTimeoutMs;
+  return Number.isFinite(v) ? v : DEFAULT_EXPECT_TIMEOUT_MS;
+}
 
 const callbacks = new Map();
 let pending = null;
 
-function expect(name, timeoutMs = EXPECT_TIMEOUT_MS) {
+function expect(name, timeoutMs = getExpectTimeoutMs()) {
   log('expect()', name, '— pending was:', pending?.name ?? 'none');
   if (pending) {
     warn(`expect("${name}") rejecting stale pending "${pending.name}" `
