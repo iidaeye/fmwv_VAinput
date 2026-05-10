@@ -147,10 +147,45 @@ GitHub Pages の URL `https://iidaeye.github.io/fmwv_VAinput/dev/standalone.html
 
 ## (b) FM 結合：Open → Load → Save の最小フロー
 1. 任意の患者レイアウトに WebViewer を配置（オブジェクト名 `VA_WebViewer`）
-2. ボタンに `VA: Open WebViewer` を割り当て、引数 `JSONSetElement( "" ; "ptID"; 患者ID; JSONString )`
+2. ボタンに `VA: Open WebViewer` を割り当て、引数を組む（後述の caller サンプル参照）
 3. WebViewer が表示されたら値を入れて「保存」
 4. `Exm_VisualAcuity_Summary` と関連 `Exm_VisualAcuity` レコードができていることを確認
 5. 同じ患者で再度 Open（編集モード、`summaryId` 指定）→ `VA: Load Summary` が呼ばれて UI に既存値が読まれること
+
+### caller のスクリプト引数サンプル
+
+`VA: Open WebViewer` は引数で受け取った JSON をそのまま WebViewer の `__fmInit` に渡します。**ここに渡さなかったキーは WebViewer 上で空表示** になるので、最低限 `ptID` と `patientName` は入れる：
+
+```fm
+// 新規作成（カルテレイアウト等のボタンから）
+JSONSetElement ( "" ;
+  [ "ptID"        ; Patients::__k_ptID    ; JSONString ] ;
+  [ "patientName" ; Patients::fullName    ; JSONString ] ;
+  [ "authorName"  ; Get ( AccountName )   ; JSONString ] ;
+  [ "mode"        ; "create"              ; JSONString ]
+)
+```
+
+```fm
+// 既存サマリの編集（編集ボタンから）
+JSONSetElement ( "" ;
+  [ "ptID"        ; Exm_VisualAcuity_Summary::_fk_ptID ; JSONString ] ;
+  [ "patientName" ; Patients::fullName                 ; JSONString ] ;
+  [ "authorName"  ; Get ( AccountName )                ; JSONString ] ;
+  [ "mode"        ; "update"                           ; JSONString ] ;
+  [ "summaryId"   ; Exm_VisualAcuity_Summary::__k      ; JSONString ]
+)
+```
+
+| キー | 用途 | 必須 |
+|---|---|---|
+| `ptID` | 患者の主キー（`_fk_ptID` に流す） | ✅ |
+| `patientName` | ヘッダの氏名表示 | 推奨 |
+| `authorName` | 入力者欄の初期値 | 任意 |
+| `mode` | `"create"`（既定） / `"update"` | 任意 |
+| `summaryId` | 編集対象 Summary レコードの内部 recordId（`mode="update"` 時） | update 時必須 |
+
+`Patients::fullName` は環境のフィールド名に置き換えてください（姓 & "　" & 名 等の calc でも可）。フィールド名が分からない場合は、まず `Get ( AccountName )` だけ入れたダミー値で動作確認するのが安全。
 
 ## (c) 引用テスト
 WebViewer の「引用 ↻」ボタン → `VA: Quote Latest` が呼ばれて直前サマリの明細が UI に追加されること。
