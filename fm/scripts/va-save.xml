@@ -126,15 +126,24 @@
     <Name>$err</Name>
   </Step>
   <Step enable="True" id="89" name="# (comment)"/>
-  <Step enable="True" id="89" name="# (comment)"><Text>Execute FileMaker Data API がエラーを返した場合（権限・レイアウト名等）、</Text></Step>
-  <Step enable="True" id="89" name="# (comment)"><Text>$result が空のままになる可能性があるので診断 JSON を入れる</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>FM が返した生 JSON を保持する。Data Viewer から $rawResult を見れば</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>FM の messages[0].message に「Field is missing: xxx」等の本物の理由が入る。</Text></Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[$result]]></Calculation></Value>
+    <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+    <Name>$rawResult</Name>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)"><Text>Execute FileMaker Data API が応答 JSON をまったく返さなかった時のみ、</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>診断 JSON を作って WebViewer 側に通知する。</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>FM が返した生 JSON は err 非ゼロでもそのまま使う（messages にちゃんと入っている）。</Text></Step>
   <Step enable="True" id="68" name="If">
-    <Calculation><![CDATA[$err ≠ 0 or IsEmpty ( $result )]]></Calculation>
+    <Calculation><![CDATA[IsEmpty ( $result )]]></Calculation>
   </Step>
   <Step enable="True" id="141" name="Set Variable">
     <Value><Calculation><![CDATA[JSONSetElement ( "" ;
   [ "messages[0].code"    ; GetAsText ( $err )                                       ; JSONString ] ;
-  [ "messages[0].message" ; "FM error " & $err & " (Execute FileMaker Data API)"     ; JSONString ] ;
+  [ "messages[0].message" ; "FM error " & $err & " (no body returned)"               ; JSONString ] ;
   [ "diagnostics.layout"  ; $layout                                                  ; JSONString ] ;
   [ "diagnostics.mode"    ; $mode                                                    ; JSONString ] ;
   [ "diagnostics.recordId"; $recordId                                                ; JSONString ]
@@ -164,7 +173,11 @@ $request & ¶ &
 "---- apiRequest (sent to Execute Data API) ----" & ¶ &
 $apiRequest & ¶ &
 ¶ &
-"---- result (from Execute Data API, len=" & Length ( $result ) & ") ----" & ¶ &
+"---- rawResult (生 FM 応答, len=" & Length ( $rawResult ) & ") ----" & ¶ &
+Left ( $rawResult ; 4000 ) & ¶ &
+( If ( Length ( $rawResult ) > 4000 ; "…(truncated, 全長は $rawResult を Data Viewer で参照)" ; "" ) ) & ¶ &
+¶ &
+"---- result (WebViewer に返す JSON, len=" & Length ( $result ) & ") ----" & ¶ &
 Left ( $result ; 4000 ) & ¶ &
 ( If ( Length ( $result ) > 4000 ; "…(truncated, 全長は $result を Data Viewer で参照)" ; "" ) ) & ¶ &
 "===== /debug ====="]]></Calculation></Value>

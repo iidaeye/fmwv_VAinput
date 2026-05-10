@@ -3,11 +3,10 @@
 
 const SUMMARY_LAYOUT = 'api_Exm_VisualAcuity_Summary';
 const PORTAL_NAME = 'VA_Detail_Portal';
-// Summary レイアウトに置かれた portal が参照する TO 名。
-// FM 側でリレーション TO を `_Exm_VisualAcuity`（アンダースコア付き）にする運用なので、
-// portalData / fieldData のキーも一字一句この名前で送る必要がある。
-// ベース TO 名 `Exm_VisualAcuity` ではなく、Summary 側から見た関連 TO 名であることに注意。
-const DETAIL_TO = '_Exm_VisualAcuity';
+// Summary レイアウト上の portal が「レコードの表示元」として指す TO 名。
+// portalData / fieldData のキーを一字一句この名前で送る必要がある。
+// FM の TO 一覧で api_Exm_VisualAcuity_Summary » Exm_VisualAcuity のチェーンの末端。
+const DETAIL_TO = 'Exm_VisualAcuity';
 
 // fieldData 用にすべて文字列化（数値は "12345" でも FM 側で型変換される）
 function s(v) {
