@@ -83,11 +83,15 @@ WebViewer のソースを患者カルテに data:URL で埋め込むため、HTM
 
 `fm/scripts/` 以下のファイルを FM スクリプトワークスペースで「ペースト」：
 
-1. **`va-open-webviewer.xml`** … `VA: Open WebViewer ( ptID ; summaryId? )`
-2. **`va-webviewer-ready.xml`** … `VA: WebViewer Ready` ★ JS 起動後コールバック
-3. **`va-load-summary.xml`** … `VA: Load Summary ( recordId )`
-4. **`va-save.xml`** … `VA: Save ( payload )`
-5. **`va-quote-latest.xml`** … `VA: Quote Latest ( ptID )`
+| ファイル | **FM スクリプト名（一字一句これ通り）** | 引数 | 呼出元 |
+|---|---|---|---|
+| `va-open-webviewer.xml` | `VA: Open WebViewer` | `{ ptID, summaryId?, mode, authorName, patientName }` | カルテのボタン |
+| `va-webviewer-ready.xml` | `VA: WebViewer Ready` | なし | WebViewer JS（起動完了時） |
+| `va-load-summary.xml` | `VA: Load Summary` | `{ recordId }` | WebViewer JS |
+| `va-save.xml` | `VA: Save` | `{ mode, summary: { layout, recordId, request } }` | WebViewer JS |
+| `va-quote-latest.xml` | `VA: Quote Latest` | `{ ptID }` | WebViewer JS |
+
+> **重要**: WebViewer JS は `FileMaker.PerformScript("VA: Save", ...)` のように **文字列でスクリプト名を指定** して呼びます。FM スクリプト名にカッコや末尾スペースを含めてしまうと `error 104 (This script cannot be found)` になります。例: ❌ `VA: Save ( payload )` / ✅ `VA: Save`。
 
 ## init JSON 注入の流れ（方式 A）
 
