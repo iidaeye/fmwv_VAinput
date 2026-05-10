@@ -133,6 +133,7 @@ WebViewer のソースを患者カルテに data:URL で埋め込むため、HTM
 | `Set Web Viewer` | **146** | ✅ |
 | `Perform JavaScript in Web Viewer` | **175** | ✅ |
 | `Execute FileMaker Data API` | **203** | ✅ |
+| `Set Error Capture` | 86 | ✅ |
 
 ## デバッグダイアログ
 

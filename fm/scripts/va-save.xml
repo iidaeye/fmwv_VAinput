@@ -6,7 +6,14 @@
   <Step enable="True" id="89" name="# (comment)"><Text>      Exm_VisualAcuity_Summary を 1 回の Data API コールで upsert</Text></Step>
   <Step enable="True" id="89" name="# (comment)"><Text>呼出: WebViewer JS の FileMaker.PerformScript("VA: Save", payload)</Text></Step>
   <Step enable="True" id="89" name="# (comment)"><Text>引数: WebViewer のペイロード JSON (json-schema.js buildSavePayload)</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>注: 全 exit 経路で __fmSaveResult を呼ぶこと。1 経路でも欠けると JS 側の</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>    expect("save") promise が tied になり「previous save still pending」になる。</Text></Step>
   <Step enable="True" id="89" name="# (comment)"><Text>========================================</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)"><Text>エラー時もスクリプトを継続させ、Get(LastError) で拾う</Text></Step>
+  <Step enable="True" id="86" name="Set Error Capture">
+    <Set state="True"/>
+  </Step>
   <Step enable="True" id="89" name="# (comment)"/>
   <Step enable="True" id="89" name="# (comment)"><Text>引数取得</Text></Step>
   <Step enable="True" id="141" name="Set Variable">
@@ -47,6 +54,18 @@
     <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
     <Name>$result</Name>
   </Step>
+  <Step enable="True" id="87" name="Show Custom Dialog">
+    <Title><Calculation><![CDATA["debug VA: Save (invalid payload)"]]></Calculation></Title>
+    <Message><Calculation><![CDATA["payload:" & ¶ & $payload & ¶ & ¶ &
+"mode: " & $mode & ¶ &
+"layout: " & $layout & ¶ &
+"request: " & $request]]></Calculation></Message>
+    <Buttons>
+      <Button CommitState="True"><Calculation><![CDATA["OK"]]></Calculation></Button>
+      <Button CommitState="False"/>
+      <Button CommitState="False"/>
+    </Buttons>
+  </Step>
   <Step enable="True" id="175" name="Perform JavaScript in Web Viewer">
     <ObjectName>
       <Calculation><![CDATA["VA_WebViewer"]]></Calculation>
@@ -66,7 +85,6 @@
   <Step enable="True" id="70" name="End If"/>
   <Step enable="True" id="89" name="# (comment)"/>
   <Step enable="True" id="89" name="# (comment)"><Text>Data API リクエスト組立: $request に layouts (+ recordId) を付与</Text></Step>
-  <Step enable="True" id="89" name="# (comment)"><Text>action は不要（recordId の有無等で create/update を自動判定）</Text></Step>
   <Step enable="True" id="141" name="Set Variable">
     <Value><Calculation><![CDATA[JSONSetElement ( $request ; "layouts" ; $layout ; JSONString )]]></Calculation></Value>
     <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
@@ -93,9 +111,39 @@
     <Text/>
     <Field>$result</Field>
   </Step>
-  <Step enable="False" id="87" name="Show Custom Dialog">
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[Get ( LastError )]]></Calculation></Value>
+    <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+    <Name>$err</Name>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)"><Text>Execute FileMaker Data API がエラーを返した場合（権限・レイアウト名等）、</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>$result が空のままになる可能性があるので診断 JSON を入れる</Text></Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[$err ≠ 0 or IsEmpty ( $result )]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[JSONSetElement ( "" ;
+  [ "messages[0].code"    ; GetAsText ( $err )                                       ; JSONString ] ;
+  [ "messages[0].message" ; "FM error " & $err & " (Execute FileMaker Data API)"     ; JSONString ] ;
+  [ "diagnostics.layout"  ; $layout                                                  ; JSONString ] ;
+  [ "diagnostics.mode"    ; $mode                                                    ; JSONString ] ;
+  [ "diagnostics.recordId"; $recordId                                                ; JSONString ]
+)]]></Calculation></Value>
+    <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+    <Name>$result</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)"><Text>★ DEBUG: 動作確認後は enable="False" に戻して良い</Text></Step>
+  <Step enable="True" id="87" name="Show Custom Dialog">
     <Title><Calculation><![CDATA["debug VA: Save"]]></Calculation></Title>
-    <Message><Calculation><![CDATA["request:" & ¶ & $apiRequest & ¶ & ¶ & "result:" & ¶ & $result]]></Calculation></Message>
+    <Message><Calculation><![CDATA["mode: " & $mode & ¶ &
+"layout: " & $layout & ¶ &
+"recordId: " & $recordId & ¶ & ¶ &
+"apiRequest:" & ¶ & $apiRequest & ¶ & ¶ &
+"err: " & $err & ¶ & ¶ &
+"result:" & ¶ & $result]]></Calculation></Message>
     <Buttons>
       <Button CommitState="True"><Calculation><![CDATA["OK"]]></Calculation></Button>
       <Button CommitState="False"/>
@@ -103,7 +151,7 @@
     </Buttons>
   </Step>
   <Step enable="True" id="89" name="# (comment)"/>
-  <Step enable="True" id="89" name="# (comment)"><Text>WebViewer に保存結果を返す</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>WebViewer に保存結果（または診断 error JSON）を返す</Text></Step>
   <Step enable="True" id="175" name="Perform JavaScript in Web Viewer">
     <ObjectName>
       <Calculation><![CDATA["VA_WebViewer"]]></Calculation>
