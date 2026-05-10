@@ -5,7 +5,12 @@
   <Step enable="True" id="89" name="# (comment)"><Text>作成: 同一患者の直前サマリを取得して WebViewer に返す</Text></Step>
   <Step enable="True" id="89" name="# (comment)"><Text>呼出: WebViewer の「引用 ↻」ボタンから FileMaker.PerformScript</Text></Step>
   <Step enable="True" id="89" name="# (comment)"><Text>引数: { "ptID": "12345" }</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>注: 全 exit 経路で __fmQuoteResult を呼ぶこと。</Text></Step>
   <Step enable="True" id="89" name="# (comment)"><Text>========================================</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="86" name="Set Error Capture">
+    <Set state="True"/>
+  </Step>
   <Step enable="True" id="89" name="# (comment)"/>
   <Step enable="True" id="141" name="Set Variable">
     <Value><Calculation><![CDATA[Get ( ScriptParameter )]]></Calculation></Value>
@@ -17,11 +22,39 @@
     <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
     <Name>$ptID</Name>
   </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA["api_Exm_VisualAcuity_Summary"]]></Calculation></Value>
+    <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+    <Name>$layout</Name>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)"><Text>validation: ptID 必須</Text></Step>
   <Step enable="True" id="68" name="If">
     <Calculation><![CDATA[IsEmpty ( $ptID )]]></Calculation>
   </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[JSONSetElement ( "" ;
+  [ "messages[0].code"    ; "9999"             ; JSONString ] ;
+  [ "messages[0].message" ; "ptID is required" ; JSONString ]
+)]]></Calculation></Value>
+    <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+    <Name>$result</Name>
+  </Step>
+  <Step enable="True" id="175" name="Perform JavaScript in Web Viewer">
+    <ObjectName>
+      <Calculation><![CDATA["VA_WebViewer"]]></Calculation>
+    </ObjectName>
+    <FunctionName>
+      <Calculation><![CDATA["__fmQuoteResult"]]></Calculation>
+    </FunctionName>
+    <Parameters Count="1">
+      <P>
+        <Calculation><![CDATA[$result]]></Calculation>
+      </P>
+    </Parameters>
+  </Step>
   <Step enable="True" id="103" name="Exit Script">
-    <Calculation><![CDATA["error: ptID is required"]]></Calculation>
+    <Calculation><![CDATA[$result]]></Calculation>
   </Step>
   <Step enable="True" id="70" name="End If"/>
   <Step enable="True" id="89" name="# (comment)"/>
@@ -44,10 +77,11 @@
   </Step>
   <Step enable="True" id="141" name="Set Variable">
     <Value><Calculation><![CDATA[JSONSetElement ( "{}" ;
-  [ "layouts" ; "api_Exm_VisualAcuity_Summary" ; JSONString ] ;
-  [ "query"   ; $queryArray      ; JSONArray  ] ;
-  [ "sort"    ; $sortArray       ; JSONArray  ] ;
-  [ "limit"   ; "1"              ; JSONString ]
+  [ "layouts" ; $layout      ; JSONString ] ;
+  [ "action"  ; "read"       ; JSONString ] ;
+  [ "query"   ; $queryArray  ; JSONArray  ] ;
+  [ "sort"    ; $sortArray   ; JSONArray  ] ;
+  [ "limit"   ; "1"          ; JSONString ]
 )]]></Calculation></Value>
     <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
     <Name>$apiRequest</Name>
@@ -64,9 +98,50 @@
     <Text/>
     <Field>$result</Field>
   </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[Get ( LastError )]]></Calculation></Value>
+    <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+    <Name>$err</Name>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[$result]]></Calculation></Value>
+    <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+    <Name>$rawResult</Name>
+  </Step>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="True" id="89" name="# (comment)"><Text>応答が空の場合だけ診断 JSON で代替</Text></Step>
+  <Step enable="True" id="68" name="If">
+    <Calculation><![CDATA[IsEmpty ( $result )]]></Calculation>
+  </Step>
+  <Step enable="True" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA[JSONSetElement ( "" ;
+  [ "messages[0].code"    ; GetAsText ( $err )                            ; JSONString ] ;
+  [ "messages[0].message" ; "FM error " & $err & " (no body returned)"    ; JSONString ] ;
+  [ "diagnostics.layout"  ; $layout                                       ; JSONString ] ;
+  [ "diagnostics.ptID"    ; $ptID                                         ; JSONString ]
+)]]></Calculation></Value>
+    <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+    <Name>$result</Name>
+  </Step>
+  <Step enable="True" id="70" name="End If"/>
+  <Step enable="True" id="89" name="# (comment)"/>
+  <Step enable="False" id="141" name="Set Variable">
+    <Value><Calculation><![CDATA["===== VA: Quote Latest debug =====" & ¶ &
+"ptID:    " & $ptID & ¶ &
+"layout:  " & $layout & ¶ &
+"err:     " & $err & ¶ &
+¶ &
+"---- apiRequest ----" & ¶ & $apiRequest & ¶ &
+¶ &
+"---- rawResult (len=" & Length ( $rawResult ) & ") ----" & ¶ &
+Left ( $rawResult ; 4000 ) & ¶ &
+"===== /debug ====="]]></Calculation></Value>
+    <Repetition><Calculation><![CDATA[1]]></Calculation></Repetition>
+    <Name>$d_debug</Name>
+  </Step>
   <Step enable="False" id="87" name="Show Custom Dialog">
     <Title><Calculation><![CDATA["debug VA: Quote Latest"]]></Calculation></Title>
-    <Message><Calculation><![CDATA["request:" & ¶ & $apiRequest & ¶ & ¶ & "result:" & ¶ & $result]]></Calculation></Message>
+    <Message><Calculation><![CDATA[$d_debug]]></Calculation></Message>
     <Buttons>
       <Button CommitState="True"><Calculation><![CDATA["OK"]]></Calculation></Button>
       <Button CommitState="False"/>
