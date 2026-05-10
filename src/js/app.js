@@ -775,6 +775,9 @@ async function onSave() {
     setStatus('保存対象の行がありません', 'warn');
     return;
   }
+  const btn = $('#btnSave');
+  if (btn.disabled) return; // 二度押し防止
+  btn.disabled = true;
   const payload = buildSavePayload(state);
   setStatus('保存中…');
   try {
@@ -788,6 +791,8 @@ async function onSave() {
     }
   } catch (err) {
     setStatus('保存に失敗: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
   }
 }
 

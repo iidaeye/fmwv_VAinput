@@ -28,26 +28,40 @@ const READY_SCRIPT_NAME = 'VA: WebViewer Ready';
 const READY_POLL_INTERVAL_MS = 100;
 const READY_POLL_MAX_TRIES = 50; // 約 5 秒
 const INIT_WAIT_TIMEOUT_MS = 8000;
+const EXPECT_TIMEOUT_MS = 30000; // FM が __fmXxxResult を呼ばないまま 30 秒過ぎたら諦める
 
 const callbacks = new Map();
 let pending = null;
 
-function expect(name) {
+function expect(name, timeoutMs = EXPECT_TIMEOUT_MS) {
   log('expect()', name, '— pending was:', pending?.name ?? 'none');
   if (pending) {
     warn(`expect("${name}") rejecting stale pending "${pending.name}" `
       + '(FM 側スクリプトがコールバック (__fmXxxResult) を呼ばずに終わった可能性)');
     pending.reject(new Error(`previous "${pending.name}" still pending`));
+    pending = null;
   }
   return new Promise((resolve, reject) => {
-    pending = { name, resolve, reject };
+    const slot = { name, resolve, reject };
+    pending = slot;
+    let timer = null;
+    if (timeoutMs > 0) {
+      timer = setTimeout(() => {
+        if (pending === slot) {
+          warn(`expect("${name}") timed out after ${timeoutMs}ms — FM からのコールバックが無し`);
+          pending = null;
+          callbacks.delete(name);
+          reject(new Error(`"${name}" timed out after ${timeoutMs}ms`));
+        }
+      }, timeoutMs);
+    }
     callbacks.set(name, (payload) => {
       log('callback resolved', name, '— payload:', preview(payload));
-      if (pending && pending.name === name) {
-        const p = pending;
+      if (timer) clearTimeout(timer);
+      if (pending === slot) {
         pending = null;
         callbacks.delete(name);
-        p.resolve(payload);
+        resolve(payload);
       } else {
         warn(`callback "${name}" fired but pending was "${pending?.name ?? 'none'}" — ignored`);
       }
