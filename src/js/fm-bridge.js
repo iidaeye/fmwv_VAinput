@@ -91,24 +91,33 @@ export function getInit() {
 // ポーリングして "VA: WebViewer Ready" を呼ぶ。FM 側はこの呼び出しを受けてから
 // Perform JS in Web Viewer で __fmSetInit を打つ。
 // ブラウザ単体（standalone / dev）では何もしない。
-export function notifyReady() {
-  let tries = 0;
-  const tick = () => {
-    if (window.FileMaker?.PerformScript) {
-      try {
-        window.FileMaker.PerformScript(READY_SCRIPT_NAME, '');
-      } catch (e) {
-        console.error('[fm-bridge] notifyReady failed', e);
+
+// window.FileMaker.PerformScript が見えるまで polling する Promise。
+// 他のシーンでも FM ブリッジ待ちを await したい場合に使える。
+export function whenFileMakerReady({
+  intervalMs = READY_POLL_INTERVAL_MS,
+  maxTries = READY_POLL_MAX_TRIES,
+} = {}) {
+  return new Promise((resolve, reject) => {
+    let tries = 0;
+    const tick = () => {
+      if (window.FileMaker?.PerformScript) return resolve(window.FileMaker);
+      if (tries++ >= maxTries) {
+        return reject(new Error('FileMaker bridge did not become ready in time'));
       }
-      return;
-    }
-    if (tries++ < READY_POLL_MAX_TRIES) {
-      setTimeout(tick, READY_POLL_INTERVAL_MS);
-    } else {
-      console.warn('[fm-bridge] FileMaker bridge did not become ready in time');
-    }
-  };
-  tick();
+      setTimeout(tick, intervalMs);
+    };
+    tick();
+  });
+}
+
+export async function notifyReady() {
+  try {
+    const fmObj = await whenFileMakerReady();
+    fmObj.PerformScript(READY_SCRIPT_NAME, '');
+  } catch (e) {
+    console.warn('[fm-bridge] notifyReady:', e.message);
+  }
 }
 
 // init データが届くまで待つ。
