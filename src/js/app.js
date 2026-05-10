@@ -801,7 +801,15 @@ function onCancel() {
 // =================== 起動 ===================
 
 async function init() {
-  const initData = fm.getInit();
+  // FM 経由のとき：window.FileMaker の準備を待って "VA: WebViewer Ready" を投げ、
+  // FM 側のコールバックで __fmSetInit が呼ばれる。
+  // standalone / data:URL 方式では既に window.__fmInit が埋まっているので即進む。
+  if (fm.isInFileMaker()) {
+    setStatus('FileMaker 接続待ち…');
+    fm.notifyReady();
+  }
+  const initData = await fm.waitForInit();
+
   state.mode = initData.mode || 'create';
   state.summary._fk_ptID = String(initData.ptID ?? '');
   state.summary.authorName = initData.authorName ?? '';

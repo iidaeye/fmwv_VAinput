@@ -79,14 +79,36 @@ WebViewer のソースを患者カルテに data:URL で埋め込むため、HTM
 
 ---
 
-# 4 つのスクリプト
+# 5 つのスクリプト
 
 `fm/scripts/` 以下のファイルを FM スクリプトワークスペースで「ペースト」：
 
 1. **`va-open-webviewer.xml`** … `VA: Open WebViewer ( ptID ; summaryId? )`
-2. **`va-load-summary.xml`** … `VA: Load Summary ( recordId )`
-3. **`va-save.xml`** … `VA: Save ( payload )`
-4. **`va-quote-latest.xml`** … `VA: Quote Latest ( ptID )`
+2. **`va-webviewer-ready.xml`** … `VA: WebViewer Ready` ★ JS 起動後コールバック
+3. **`va-load-summary.xml`** … `VA: Load Summary ( recordId )`
+4. **`va-save.xml`** … `VA: Save ( payload )`
+5. **`va-quote-latest.xml`** … `VA: Quote Latest ( ptID )`
+
+## init JSON 注入の流れ（方式 A）
+
+`VA: Open WebViewer` 直後に `Perform JavaScript in Web Viewer` を打つと、ページがまだ読み込まれていない／`__fmSetInit` が未定義で **error 5** になる。これを避けるため、Ready コールバック方式を採用する：
+
+```
+[FM] VA: Open WebViewer
+   ├─ $$VA_initJSON に init JSON を保存
+   └─ Set Web Viewer [ GoToURL ] → Exit
+[WV] HTML/JS 読み込み → fm-bridge.js が __fmSetInit を定義
+[WV] window.FileMaker が利用可能になるまでポーリング
+[WV] FileMaker.PerformScript("VA: WebViewer Ready") を呼ぶ
+[FM] VA: WebViewer Ready
+   ├─ $$VA_initJSON が空でないことを確認
+   ├─ Perform JavaScript in Web Viewer [ __fmSetInit ; $$VA_initJSON ]
+   └─ $$VA_initJSON をクリア
+[WV] __fmInit が更新され、'fm:init' イベントで app.js が初期化を続行
+   └─ mode=update なら fm.loadSummary() が VA: Load Summary を呼ぶ
+```
+
+`VA: WebViewer Ready` は WebViewer のオブジェクト名 `VA_WebViewer` を前提にしている。命名を変えた場合は両スクリプト併せて修正する。
 
 ## ペースト手順
 
