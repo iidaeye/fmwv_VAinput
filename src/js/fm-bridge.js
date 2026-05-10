@@ -3,6 +3,27 @@
 // FM 側はスクリプト終了時に Perform JavaScript in Web Viewer で
 // window.__fmReceiveSummary / window.__fmSaveResult / window.__fmQuoteResult を呼ぶ。
 
+// デバッグログ。?fmdebug=0 で無効化、それ以外は ON。
+// window.__fmDebug = false でも切れる。
+const DEBUG = (() => {
+  try {
+    const q = new URLSearchParams(window.location.search);
+    if (q.get('fmdebug') === '0') return false;
+  } catch { /* noop */ }
+  return window.__fmDebug !== false;
+})();
+const log = (...args) => { if (DEBUG) console.log('[fm-bridge]', ...args); };
+const warn = (...args) => console.warn('[fm-bridge]', ...args);
+function preview(v, max = 200) {
+  try {
+    const s = typeof v === 'string' ? v : JSON.stringify(v);
+    if (!s) return String(v);
+    return s.length > max ? s.slice(0, max) + `…(+${s.length - max} chars)` : s;
+  } catch {
+    return String(v);
+  }
+}
+
 const READY_SCRIPT_NAME = 'VA: WebViewer Ready';
 const READY_POLL_INTERVAL_MS = 100;
 const READY_POLL_MAX_TRIES = 50; // 約 5 秒
@@ -12,17 +33,23 @@ const callbacks = new Map();
 let pending = null;
 
 function expect(name) {
+  log('expect()', name, '— pending was:', pending?.name ?? 'none');
   if (pending) {
+    warn(`expect("${name}") rejecting stale pending "${pending.name}" `
+      + '(FM 側スクリプトがコールバック (__fmXxxResult) を呼ばずに終わった可能性)');
     pending.reject(new Error(`previous "${pending.name}" still pending`));
   }
   return new Promise((resolve, reject) => {
     pending = { name, resolve, reject };
     callbacks.set(name, (payload) => {
+      log('callback resolved', name, '— payload:', preview(payload));
       if (pending && pending.name === name) {
         const p = pending;
         pending = null;
         callbacks.delete(name);
         p.resolve(payload);
+      } else {
+        warn(`callback "${name}" fired but pending was "${pending?.name ?? 'none'}" — ignored`);
       }
     });
   });
@@ -30,12 +57,15 @@ function expect(name) {
 
 function installCallback(globalName, key) {
   window[globalName] = (rawJson) => {
+    log(`window.${globalName}() called — type=${typeof rawJson}, len=${String(rawJson ?? '').length}, raw=${preview(rawJson)}`);
     let parsed = rawJson;
     if (typeof rawJson === 'string') {
-      try { parsed = JSON.parse(rawJson); } catch { /* keep string */ }
+      try { parsed = JSON.parse(rawJson); }
+      catch (e) { warn(`${globalName}: JSON.parse failed`, e.message); }
     }
     const cb = callbacks.get(key);
     if (cb) cb(parsed);
+    else warn(`${globalName}: no callback registered for key "${key}" — payload dropped`);
   };
 }
 
@@ -48,6 +78,7 @@ installCallback('__fmQuoteResult', 'quote');
 // Perform JavaScript in Web Viewer [__fmSetInit, $$VA_initJSON] を打つ。
 // __fmSetInit が呼ばれた時点で window.__fmInit を更新し、'fm:init' イベントで通知する。
 window.__fmSetInit = function (rawJson) {
+  log('__fmSetInit() called — raw:', preview(rawJson));
   let parsed = rawJson;
   if (typeof rawJson === 'string') {
     try {
@@ -58,6 +89,7 @@ window.__fmSetInit = function (rawJson) {
     }
   }
   window.__fmInit = parsed && typeof parsed === 'object' ? parsed : {};
+  log('__fmSetInit applied:', window.__fmInit);
   window.dispatchEvent(new CustomEvent('fm:init', { detail: window.__fmInit }));
 };
 
@@ -65,12 +97,13 @@ function performScript(scriptName, paramObj) {
   const param = typeof paramObj === 'string'
     ? paramObj
     : JSON.stringify(paramObj ?? {});
+  log(`performScript("${scriptName}") — param ${param.length} chars: ${preview(param)}`);
   if (window.FileMaker?.PerformScript) {
     window.FileMaker.PerformScript(scriptName, param);
     return;
   }
-  // ブラウザ単体時：mock があれば呼ぶ
   if (window.__fmMock?.performScript) {
+    log('  → mock route');
     window.__fmMock.performScript(scriptName, param);
     return;
   }
@@ -112,11 +145,13 @@ export function whenFileMakerReady({
 }
 
 export async function notifyReady() {
+  log('notifyReady() — waiting for window.FileMaker…');
   try {
     const fmObj = await whenFileMakerReady();
+    log(`notifyReady() — bridge ready, calling PerformScript("${READY_SCRIPT_NAME}")`);
     fmObj.PerformScript(READY_SCRIPT_NAME, '');
   } catch (e) {
-    console.warn('[fm-bridge] notifyReady:', e.message);
+    warn('notifyReady:', e.message);
   }
 }
 
