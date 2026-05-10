@@ -2,6 +2,7 @@
 <fmxmlsnippet type="FMObjectList">
   <Step enable="True" id="89" name="# (comment)"><Text>========================================</Text></Step>
   <Step enable="True" id="89" name="# (comment)"><Text>Script: VA: Save</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>Version: 2026-05-10  (action 明示 / Set Error Capture / $rawResult 保持 / $d_debug)</Text></Step>
   <Step enable="True" id="89" name="# (comment)"><Text>作成: WebViewer から渡された Data API 互換 JSON で</Text></Step>
   <Step enable="True" id="89" name="# (comment)"><Text>      Exm_VisualAcuity_Summary を 1 回の Data API コールで upsert</Text></Step>
   <Step enable="True" id="89" name="# (comment)"><Text>呼出: WebViewer JS の FileMaker.PerformScript("VA: Save", payload)</Text></Step>

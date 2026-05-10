@@ -93,6 +93,10 @@ WebViewer のソースを患者カルテに data:URL で埋め込むため、HTM
 
 > **重要**: WebViewer JS は `FileMaker.PerformScript("VA: Save", ...)` のように **文字列でスクリプト名を指定** して呼びます。FM スクリプト名にカッコや末尾スペースを含めてしまうと `error 104 (This script cannot be found)` になります。例: ❌ `VA: Save ( payload )` / ✅ `VA: Save`。
 
+### バージョン確認
+
+各スクリプト先頭の `# (comment) Version: YYYY-MM-DD  (...)` が、FM に貼ってある版とリポジトリ版の照合用マーカーです。git push しただけでは FM スクリプトは更新されないので、トラブル時は FM の Script Workspace で先頭コメントを見て、リポジトリ最新と Version 行が一致しているか確認してください。一致していなければ再ペースト → Cmd+S で更新。
+
 ## init JSON 注入の流れ（方式 A）
 
 `VA: Open WebViewer` 直後に `Perform JavaScript in Web Viewer` を打つと、ページがまだ読み込まれていない／`__fmSetInit` が未定義で **error 5** になる。これを避けるため、Ready コールバック方式を採用する：

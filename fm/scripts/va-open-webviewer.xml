@@ -2,6 +2,7 @@
 <fmxmlsnippet type="FMObjectList">
   <Step enable="True" id="89" name="# (comment)"><Text>========================================</Text></Step>
   <Step enable="True" id="89" name="# (comment)"><Text>Script: VA: Open WebViewer</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>Version: 2026-05-10  (init JSON は $$VA_initJSON 経由 / Ready コールバック方式)</Text></Step>
   <Step enable="True" id="89" name="# (comment)"><Text>作成: 視力入力 WebViewer を起動</Text></Step>
   <Step enable="True" id="89" name="# (comment)"><Text>呼出: カルテ等のボタンから実行</Text></Step>
   <Step enable="True" id="89" name="# (comment)"><Text>引数: { "ptID":"...", "summaryId":"...(編集時のみ)", </Text></Step>

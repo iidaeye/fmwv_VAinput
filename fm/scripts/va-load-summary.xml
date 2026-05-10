@@ -2,6 +2,7 @@
 <fmxmlsnippet type="FMObjectList">
   <Step enable="True" id="89" name="# (comment)"><Text>========================================</Text></Step>
   <Step enable="True" id="89" name="# (comment)"><Text>Script: VA: Load Summary</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>Version: 2026-05-10  (Set Error Capture / $rawResult 保持 / 全 exit でコールバック)</Text></Step>
   <Step enable="True" id="89" name="# (comment)"><Text>作成: 既存サマリの内容を WebViewer に読み込む</Text></Step>
   <Step enable="True" id="89" name="# (comment)"><Text>呼出: WebViewer JS の FileMaker.PerformScript("VA: Load Summary", { recordId })</Text></Step>
   <Step enable="True" id="89" name="# (comment)"><Text>引数: { "recordId": "..." }   ※ FM 内部 recordId（__k ではない）</Text></Step>

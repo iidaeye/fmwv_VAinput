@@ -2,6 +2,7 @@
 <fmxmlsnippet type="FMObjectList">
   <Step enable="True" id="89" name="# (comment)"><Text>========================================</Text></Step>
   <Step enable="True" id="89" name="# (comment)"><Text>Script: VA: WebViewer Ready</Text></Step>
+  <Step enable="True" id="89" name="# (comment)"><Text>Version: 2026-05-10  (新規 / JS 起動完了後に init JSON を __fmSetInit へ流す)</Text></Step>
   <Step enable="True" id="89" name="# (comment)"><Text>作成: WebViewer 側の JS が読み込み完了したことを受け、init JSON を注入する</Text></Step>
   <Step enable="True" id="89" name="# (comment)"><Text>呼出: WebViewer の fm-bridge.js から FileMaker.PerformScript("VA: WebViewer Ready")</Text></Step>
   <Step enable="True" id="89" name="# (comment)"><Text>引数: なし（必要なら ScriptParameter を受け取れる）</Text></Step>
