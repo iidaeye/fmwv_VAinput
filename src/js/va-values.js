@@ -36,6 +36,9 @@ export const VA_SUMMARY_TITLE_SUGGESTIONS = [
 // 度数の 0.25 D ショートカット小数部
 export const DIOPTER_QUICK_FRAC = ['0.25', '0.50', '0.75'];
 
+// レンズ度数の ▲▼ / ↑↓ 1 ステップ（D）
+export const DIOPTER_STEP = 0.25;
+
 // 軸の頻出値
 export const AXIS_QUICK_VALUES = ['90', '180'];
 

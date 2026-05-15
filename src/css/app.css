@@ -418,6 +418,7 @@ input[type="text"], textarea {
 .keypad-key.key-frac     { background: var(--c-key-frac); font-size: 18px; }
 .keypad-key.key-quick    { background: var(--c-key-quick); }
 .keypad-key.key-bump     { background: #ffd9b3; font-size: 20px; font-weight: 800; }
+.keypad-key.key-step     { background: #ffe0b3; font-size: 30px; font-weight: 800; }
 .keypad-key.key-back     { background: #d3d6da; font-size: 22px; }
 .keypad-key.key-sign     { background: #ffd58a; font-size: 28px; }
 .keypad-key.key-append   { background: #d4f0ff; font-size: 18px; }

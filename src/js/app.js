@@ -1,7 +1,7 @@
 import {
   VA_TITLES, EYES, VA_SPECIAL,
   EXM_CONDITIONS, VA_SUMMARY_TITLE_SUGGESTIONS,
-  DIOPTER_QUICK_FRAC, AXIS_QUICK_VALUES, VA_APPEND_KEYS,
+  DIOPTER_QUICK_FRAC, DIOPTER_STEP, AXIS_QUICK_VALUES, VA_APPEND_KEYS,
   makeEmptyRow, normalizeDiopter, normalizeAxis,
   rowToDisplayLine, isRowEmpty,
 } from './va-values.js';
@@ -480,11 +480,32 @@ function buildVAPad(col) {
   return grid;
 }
 
+// 度数を delta D ずつ増減（レンズ度数の ▲▼ / ↑↓ 用）。空欄は 0 起点。
+// 整数の cents で計算し浮動小数誤差を回避、出力は normalizeDiopter と同じ ±N.NN。
+function bumpDiopter(col, delta) {
+  const cur = parseFloat(state.draft[col]);
+  const base = Number.isFinite(cur) ? cur : 0;
+  const cents = Math.round((base + delta) * 100);
+  const clamped = Math.max(-3000, Math.min(3000, cents)); // ±30.00 D で頭打ち
+  const sign = clamped < 0 ? '-' : '+';
+  const abs = Math.abs(clamped);
+  const intPart = Math.floor(abs / 100);
+  const fracPart = String(abs % 100).padStart(2, '0');
+  state.draft[col] = `${sign}${intPart}.${fracPart}`;
+  renderForm();
+  renderKeypad();
+}
+
 function buildDiopterPad(col) {
   const grid = newPadGrid();
   // 符号 col 1, rows 1-2
   grid.appendChild(makeKey('+', () => setSign(col, '+'), { cls: 'key-sign', pos: pos(1, 1) }));
   grid.appendChild(makeKey('−', () => setSign(col, '-'), { cls: 'key-sign', pos: pos(2, 1) }));
+  // 0.25 ステップ ▲▼（キーボード ↑↓ と同機能）col 2
+  grid.appendChild(makeKey('▲', () => bumpDiopter(col, +DIOPTER_STEP),
+    { cls: 'key-step', title: '0.25 上げる（↑キー）', pos: pos(1, 2, 2) }));
+  grid.appendChild(makeKey('▼', () => bumpDiopter(col, -DIOPTER_STEP),
+    { cls: 'key-step', title: '0.25 下げる（↓キー）', pos: pos(3, 2, 2) }));
   // 0.25 / 0.50 / 0.75 / .0 ショートカット col 3
   grid.appendChild(makeKey('0.25', () => applyDecimalShortcut(col, 'frac25'), { cls: 'key-frac', pos: pos(1, 3) }));
   grid.appendChild(makeKey('0.50', () => applyDecimalShortcut(col, 'frac50'), { cls: 'key-frac', pos: pos(2, 3) }));
@@ -692,6 +713,16 @@ document.addEventListener('keydown', (ev) => {
     if (ev.key === '+' || ev.key === '-') {
       ev.preventDefault();
       setSign(col, ev.key);
+      return;
+    }
+    if (ev.key === 'ArrowUp') {
+      ev.preventDefault();
+      bumpDiopter(col, +DIOPTER_STEP);
+      return;
+    }
+    if (ev.key === 'ArrowDown') {
+      ev.preventDefault();
+      bumpDiopter(col, -DIOPTER_STEP);
       return;
     }
   }
