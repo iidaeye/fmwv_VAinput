@@ -4,7 +4,18 @@
 > 今後実施すべき最適化作業を**文脈ゼロの担当者がそのまま着手できる粒度**でまとめたもの。
 > 分析の元データ・再現スクリプトは `dev/perf/` 配下にある。
 
-最終更新: 2026-05-15
+最終更新: 2026-05-16
+
+## ステータス（2026-05-16 時点）
+
+| 項目 | 状態 |
+|---|---|
+| **P1 token プール化** | ✅ **完了**（ops/session 1.00 → 163、sign-in 約 99% 削減） |
+| **P4 ClinicReceptionStatus 400 バグ** | ✅ **完了**（400 完全消滅、GET パスへ統一） |
+| **P2 `cPt_VisitRecord/_find` 縮小** | 🔴 **現在の最優先**（残コストの 98.7%、7.7 GB/13h） |
+| P3 / P5 / P6 / P7 | 未着手 |
+
+詳細な前後比較は「§1.3 効果測定履歴」を参照。
 
 ---
 
@@ -107,7 +118,60 @@ DELETE /sessions/{token}
 
 ---
 
+## 1.3 効果測定履歴（before / after）
+
+計測はすべて `dev/perf/cluster-transactions.mjs` による。時間帯が異なるため
+**絶対量ではなく構造指標（ops/session・per-call サイズ・EP 別エラー率）で比較**。
+
+### 取得ログ
+
+| ラベル | 期間 | 位置づけ |
+|---|---|---|
+| baseline | 2026-05-15 14:31–15:49（79分・日中繁忙） | 修正前。全提言の起点 |
+| overnight | 2026-05-15 17:47–05-16 06:32（約13h・夜間中心） | 修正前（cutover 前）。比較は busy 窓 18時台で実施 |
+| **post-fix** | **2026-05-16 09:23–22:15（約13h）** | **P1/P4 稼働後** |
+
+### self-checkin（IP-A）構造指標
+
+| 指標 | baseline | post-fix | 判定 |
+|---|---|---|---|
+| **ops/session** | **1.00** | **163**（12–14時は 376–425） | ✅ P1 成功 |
+| sign-in 回数 | ~44,000 /時（18時台） | **~150 /時** | ✅ 約 99% 削減 |
+| 13h 窓 sign-in 総数 | （換算 28万超） | **1,682** | ✅ |
+| sign-out（DELETE）数 | 73,848 /12h | **2,462 /13h** | ✅ |
+| `ClinicReceptionStatus/_find` の 400 | 100%（2,707–2,917件） | **0 件（完全消滅）** | ✅ P4 成功 |
+| 〃 置換先 | — | GET `…/records` 28,423 件すべて成功 | ✅ |
+
+### `cPt_VisitRecord/_find`（成功レスポンス）サイズ推移
+
+| | baseline(昼) | overnight(夜) | post-fix(本日) |
+|---|---|---|---|
+| p50 | 35 KB | 230 KB（一時悪化） | **62 KB** |
+| mean | 171 KB | 252 KB | **151 KB** |
+
+→ overnight の肥大化はスキーマ劣化ではなく、履歴の多い患者へクエリが偏った
+**データ依存**だった可能性大。post-fix で概ねベースライン水準に回帰。
+ただし **token/400 解消後は本 EP が残コストの 98.7%（7.7 GB/13h, 53,580件×147KB）** ＝ P2 が最優先化。
+
+---
+
 ## 2. 根本原因の分類
+
+> ✅ = 2026-05-16 時点で解消済み
+
+| # | 原因 | 種別 | 影響 | 状態 |
+|---|---|---|---|---|
+| A | self-checkin が **1 コール毎に sign-in/out**（token 非再利用） | アプリ設計 | 全 HTTP の 2/3 がセッション管理。WPE/TLS を圧迫 | ✅ P1 で解消 |
+| B | **`cPt_VisitRecord/_find` が太い JSON** | レイアウト/クエリ設計 | 帯域・シリアライズ・FM 評価コスト。post-fix で **7.7 GB/13h（残コスト 98.7%）** | 🔴 未（P2） |
+| C | LIFF の 1 操作が **5〜13 直列 API コール** | アプリ設計 | 体感 1〜2.5 秒の遅延 | 未（P3） |
+| D | `ClinicReceptionStatus/_find` が **100% FM error 400** | アプリのバグ | 完全に無駄な RTT 2,707 回 | ✅ P4 で解消 |
+| E | `ClinicScheduleException/_find` が **100% 0件** かつ Flow B で 4 連発 | アプリ設計 | 無駄 RTT。post-fix でも 52,262 件全 0 件 | 未（P5） |
+| F | self-checkin の `>=1s` スパイク（断続） | FM 内部 競合 | 要 Top Call 突合（未取得） | 未 |
+
+**重要**: 残る B/C/E は FM Server を増強しても直らない**クライアント側 API 利用パターンの問題**。
+最も費用対効果が高いのはアプリ改修。
+
+### 旧・根本原因表（参考: baseline 時点のスナップショット）
 
 | # | 原因 | 種別 | 影響 |
 |---|---|---|---|
@@ -125,26 +189,26 @@ DELETE /sessions/{token}
 
 ## 3. 実施すべき最適化（優先順）
 
-### ★★★ P1: self-checkin の token プール化
+### ✅ P1: self-checkin の token プール化 — **完了（2026-05-16）**
 
-**現状**: `ops/session = 1.000`。`POST /sessions` → 1 find → `DELETE /sessions` を 71,272 回。
+**実施前**: `ops/session = 1.000`。`POST /sessions` → 1 find → `DELETE /sessions` を 71,272 回。
 
-**対応**:
-- self-checkin クライアント（端末側 or その BFF）で **Data API token をプール/再利用**する
-- token は FM Data API 既定で **15 分**有効。1 token で複数 find を捌く
-- 実装の置き場所は self-checkin 側コード（**本リポ外**の可能性大 → 要確認）
+**実施内容**: self-checkin 側で Data API token をプール/再利用するよう改修。
 
-**期待効果**: 71k sign-in/out → 数十〜数百回。HTTP リクエスト総数が約 1/3、WPE/TLS 負荷が大幅減。
+**実測結果（post-fix ログ）**:
+- `ops/session` 1.00 → **163**（繁忙帯 12–14時は 376–425）
+- sign-in 約 **99% 削減**（~44,000/時 → ~150/時）
+- sign-out（DELETE）も 73,848/12h → 2,462/13h に激減
 
-**検証**: 改修後に `fmdapi.log` を再取得し
-`node dev/perf/cluster-transactions.mjs <log> --ip=<IP-A>`
-で `ops/session` が 1.0 → 大きく上昇することを確認。
+→ §1.3 効果測定履歴 参照。狙い通りの効果を確認。
 
 ---
 
-### ★★★ P2: `cPt_VisitRecord/_find` のレスポンス縮小
+### 🔴 P2: `cPt_VisitRecord/_find` のレスポンス縮小 — **現在の最優先**
 
-**現状**: 平均 168.7 KB（max 692 KB）、合計 2.5 GB/79分。p50=35KB / p90=628KB のバイモーダル。
+**現状（post-fix 2026-05-16）**: P1/P4 解消後、本 EP が**残コストの 98.7%**。
+post-fix で **53,580 件 × mean 147 KB ≒ 7.7 GB / 13h**（p50 62 KB）。
+token/セッション・オーバーヘッドが消えた今、**体感速度の支配項はこの 1 本**。
 
 **対応（要 FM スキーマ調査）**:
 1. `_find` が叩いている**レイアウトのフィールド数 / ポータル**を確認
@@ -153,9 +217,14 @@ DELETE /sessions/{token}
 4. ポータル行が大量なら `portalData` を必要分に絞る or 別 EP 化
 5. FM 22 なら **OData の `$select`** で列指定の読みも検討余地（別途 PoC）
 
-**期待効果**: 173 KB → 数 KB 級。帯域・FM レイアウト評価・JSON 化が 3〜10 倍改善見込み。
+**期待効果**: 147 KB → 数 KB 級。帯域・FM レイアウト評価・JSON 化が 3〜10 倍改善見込み。
+これが現状の最大ボトルネックなので、体感速度に最も直結する。
 
-**検証**: `cluster-transactions.mjs` の "mean KB" 列が劇的に下がること。
+**検証**: `cluster-transactions.mjs` の `cPt_VisitRecord/_find` 行 "mean KB" が劇的に下がること。
+
+> 注: overnight ログで p50 が一時 230 KB に肥大したが post-fix で 62 KB に回帰。
+> これはデータ依存（履歴の多い患者）の変動であり、slim 化すれば
+> この変動自体も縮小する。
 
 ---
 
@@ -172,16 +241,18 @@ DELETE /sessions/{token}
 
 ---
 
-### ★★ P4: `ClinicReceptionStatus/_find` の 400 バグ修正
+### ✅ P4: `ClinicReceptionStatus/_find` の 400 バグ修正 — **完了（2026-05-16）**
 
-**現状**: self-checkin で 2,707 件、**100% FM error 400**（不正クエリ）。
-同レイアウトの `GET .../records?_limit=1&_offset=1` は 5,894 件成功している → **正解パスは GET 側**。POST `_find` のクエリ JSON が壊れている疑い。
+**実施前**: self-checkin で 2,707〜2,917 件、**100% FM error 400**（不正クエリ）。
+同レイアウトの `GET .../records?_limit=1&_offset=1` は成功 → 正解パスは GET 側だった。
 
-**対応**:
-- self-checkin クライアントの該当呼び出し箇所を特定し、`_find` の query を修正 or 成功している GET パスへ統一
-- 直近の改修で query 構造が変わったのに旧コールが残っている可能性
+**実施内容**: 壊れた POST `_find` を、成功している GET `…/records` パスへ統一。
 
-**期待効果**: 無駄 RTT 2,707 回を完全消去。
+**実測結果（post-fix ログ）**:
+- POST `api_ClinicReceptionStatus/_find[err=400]` … **0 件（完全消滅）**
+- GET `api_ClinicReceptionStatus/records` … 28,423 件すべて成功（err=0）
+
+→ §1.3 効果測定履歴 参照。無駄 RTT を完全消去。
 
 ---
 
@@ -265,12 +336,19 @@ node dev/perf/measure.mjs --scenarios=B,C --iterations=30 --mode=per-call   --ou
 
 ## 6. 着手順の推奨
 
-1. **P4（バグ修正）** — 影響局所・低リスク・即効。まず手を付ける
-2. **P1（token プール）** — 最大の負荷削減。self-checkin コードの所在確認から
-3. **P2（slim レイアウト）** — FM スキーマ調査が必要。FM 管理者と連携
-4. **P3（BFF 集約）** — 設計を要するため P1 の基盤（token プール）と一体で計画
-5. **P5/P6/P7** — 上記の効果測定後に再評価
+- ~~P4（バグ修正）~~ ✅ **完了（2026-05-16）**
+- ~~P1（token プール）~~ ✅ **完了（2026-05-16）**
+
+残りの推奨順:
+
+1. **P2（slim レイアウト）** — 🔴 **最優先**。残コストの 98.7%（7.7 GB/13h）。
+   FM スキーマ調査が必要。FM 管理者と連携。体感速度に最も直結
+2. **P5（ClinicScheduleException キャッシュ）** — post-fix でも 52,262 件全 0 件の無駄打ち。
+   クライアント側短時間キャッシュで RTT 削減。比較的低リスク
+3. **P3（BFF 集約）** — LIFF 側の多段直列。P1 の token 基盤を流用して設計
+4. **P6/P7／F（>=1s スパイク）** — 上記の効果測定後に再評価。F は Top Call ログ取得が前提
 
 > 各 P の完了判定は必ず `fmdapi.log` 再取得 →
 > `cluster-transactions.mjs` で before/after 比較すること。
 > 体感ではなく数値（ops/session, mean KB, req/sec, 0件率）で評価する。
+> 実績は §1.3 効果測定履歴 に追記していく。
