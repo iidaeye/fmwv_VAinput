@@ -130,6 +130,47 @@ python3 -m http.server 8080
 `Execute FileMaker Data API` を使うアカウントの拡張アクセス権で **`fmrest`** を有効化する。
 （プライバシセット → 拡張アクセス権 → fmrest にチェック）
 
+## FM への配布（更新手順）
+
+`src/` を変更したら、以下で稼働中の FileMaker ファイルへ反映する。
+WebViewer 本体（バンドル HTML）と FM スクリプトは **別経路** で配布する点に注意。
+git push だけではどちらも FM には反映されない。
+
+### A. WebViewer バンドルの配布
+
+1. ビルド
+   ```sh
+   npm run build        # = node build/build.mjs
+   ```
+   `build/index.bundle.html` が再生成される。出力末尾の
+   `built: ... ( NNNNN bytes )` のバイト数を控えておくと貼り付け後の照合に使える。
+2. `build/index.bundle.html` をテキストエディタで開き、**全文をコピー**
+   （先頭 `<!doctype html>` 〜 末尾 `</html>`）。
+3. FileMaker で `globals::g_VA_WebViewerHTML`（テキスト型／グローバル保管）を
+   **全選択して削除 → 貼り付け** で全置換する。部分置換は事故のもと。
+   グローバルフィールドなので任意の 1 レコードで編集すれば全体に反映される。
+4. `VA: Open WebViewer` を実行し、WebViewer が起動してキーパッドが描画され、
+   今回の変更（例：度数パッドの ▲▼ ボタン）が見た目に出ているか目視確認する。
+   WebViewer には DevTools がないため、確認は画面表示と実操作で行う。
+5. バンドルは `.gitignore` 対象でリポジトリ管理外。**どの commit のソースから
+   生成したか**（コミットハッシュ＋日付）を貼り付け時にメモしておくと、
+   後で挙動差分を追える。
+
+### B. FM スクリプトの配布
+
+`fm/scripts/*.xml` はスクリプト本体。`fm/README.md` の手順どおり、各 XML を
+コピー → FileMaker のスクリプトワークスペースに貼り付け → 保存（Cmd+S）。
+各スクリプト先頭の `Version:` コメントがリポジトリ最新と一致しているか必ず確認する。
+スキーマやレイアウト構成を変えた場合は「FileMaker 側 セットアップ」の該当節も再適用する。
+
+### 配布チェックリスト
+
+- [ ] `npm run build` 実行済み（最新ソースを反映）
+- [ ] `g_VA_WebViewerHTML` を全文置換で更新
+- [ ] 変更したスクリプト XML を再ペースト＋保存（`Version:` 一致を確認）
+- [ ] `VA: Open WebViewer` で起動し、変更点を目視確認
+- [ ] 貼り付け元コミット（ハッシュ／日付）を記録
+
 ## WebViewer ↔ FM の JSON
 
 ### 保存（WebViewer → FM `VA: Save`）
